@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NES Battle City - Classic Game with AI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="game-header">
+            <h1>BATTLE CITY</h1>
+        </div>
+
+        <div class="main-content">
+            <div class="game-container" id="gameContainer">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+
+            <div class="bottom-panel">
+                <div class="info-panel" >
+                    <div class="stats" style="display: none">
+                        <div class="stat-item">
+                            <span class="stat-label">Player Lives:</span>
+                            <span class="stat-value player-info" id="AILives">3</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Enemies Active:</span>
+                            <span class="stat-value enemy-info" id="enemyCount">0/4</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Enemy Spawn CD:</span>
+                            <span class="stat-value cooldown-info" id="enemySpawnCD">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Next Spawn Pos:</span>
+                            <span class="stat-value spawn-info" id="nextSpawnPos">Top Left</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Brick Walls:</span>
+                            <span class="stat-value brick-info" id="wallCount">16</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Steel Walls:</span>
+                            <span class="stat-value steel-info" id="steelWallCount">16</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Player Position:</span>
+                            <span class="stat-value" id="tankPosition">12.0,12.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Bounding Box:</span>
+                            <span class="stat-value" id="boundingBox">12,12</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Facing:</span>
+                            <span class="stat-value" id="tankDirection">UP</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Bullets Active:</span>
+                            <span class="stat-value bullet-info" id="bulletCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Fire Cooldown:</span>
+                            <span class="stat-value cooldown-info" id="cooldownDisplay">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Can Shoot:</span>
+                            <span class="stat-value player-info" id="canShootStatus">Yes</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Current Zoom:</span>
+                            <span class="stat-value" id="currentZoom">1x</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">AI Status:</span>
+                            <span class="stat-value ai-info" id="aiStatus">Off</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">AI Target:</span>
+                            <span class="stat-value enemy-info" id="aiTarget">None</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">AI Action:</span>
+                            <span class="stat-value ai-info" id="aiAction">Idle</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">AI Path Length:</span>
+                            <span class="stat-value ai-info" id="aiPathLength">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Danger Level:</span>
+                            <span class="stat-value cooldown-info" id="dangerLevel">Low</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Enemies Killed:</span>
+                            <span class="stat-value player-info" id="enemiesKilled">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Bullets Dodged:</span>
+                            <span class="stat-value player-info" id="bulletsDodged">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Bullets Destroyed:</span>
+                            <span class="stat-value player-info" id="bulletsDestroyed">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">AI Shoot Cooldown:</span>
+                            <span class="stat-value ai-info" id="aiShootCooldown">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Needs Alignment:</span>
+                            <span class="stat-value cooldown-info" id="needsAlignmentStatus">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Enemy Facing Player:</span>
+                            <span class="stat-value enemy-info" id="enemyFacingPlayer">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">AI Strategy:</span>
+                            <span class="stat-value ai-info" id="aiStrategy">None</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Line of Sight:</span>
+                            <span class="stat-value ai-info" id="lineOfSightStatus">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Can Shoot Enemy:</span>
+                            <span class="stat-value player-info" id="canShootEnemyStatus">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Bullet Collision:</span>
+                            <span class="stat-value bullet-info" id="bulletCollisionStatus">Safe</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Safe Direction:</span>
+                            <span class="stat-value player-info" id="safeDirectionStatus">None</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Bullet TTC:</span>
+                            <span class="stat-value cooldown-info" id="bulletTTCStatus">∞</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Move Blocked:</span>
+                            <span class="stat-value enemy-info" id="moveBlockedStatus">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Prediction Active:</span>
+                            <span class="stat-value ai-info" id="predictionStatus">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Future Pos:</span>
+                            <span class="stat-value ai-info" id="futurePosition">N/A</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Prediction LOS:</span>
+                            <span class="stat-value player-info" id="predictionLOS">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Enemy Path Clear:</span>
+                            <span class="stat-value player-info" id="enemyPathClear">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Should Predictive Shoot:</span>
+                            <span class="stat-value ai-info" id="shouldPredictiveShoot">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Perpendicular Bullet Risk:</span>
+                            <span class="stat-value bullet-info" id="perpendicularRiskStatus">None</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Next to Enemy:</span>
+                            <span class="stat-value enemy-info" id="nextToEnemyStatus">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Bricks Destroyed:</span>
+                            <span class="stat-value brick-info" id="bricksDestroyed">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Brick Bits Left:</span>
+                            <span class="stat-value brick-info" id="brickBitsLeft">64</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Last Hit Side:</span>
+                            <span class="stat-value bullet-info" id="lastHitSide">None</span>
+                        </div>
+                    </div>
+
+                    <div class="zoom-controls">
+                        <div class="zoom-buttons">
+                            <button id="zoom1x" class="zoom-btn">1× (208×208)</button>
+                            <button id="zoom2x" class="zoom-btn">2× (416×416)</button>
+                            <button id="zoom3x" class="zoom-btn active">3× (624×624)</button>
+                        </div>
+                    </div>
+
+                    <div class="controls">
+                        <button id="newGameBtn">New Game</button>
+                        <button id="pauseBtn">Pause</button>
+                        <button id="aiToggle" class="ai-button" style="display: none;">Enable AI</button>
+                        <button id="toggleBoundingBox" class="ai-button">Show Bounding Box</button>
+                        <button id="togglePrediction" class="ai-button">Show Predictions</button>
+                    </div>
+
+                    <div class="instructions">
+                        <p><span class="status-indicator" id="aiStatusIndicator"></span>
+                            <span id="aiStatusText">AI: Ready to enable</span>
+                        </p>
+                    </div>
+
+                    <div class="ai-debug" id="aiDebug">
+                        AI Debug: Waiting for activation...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
