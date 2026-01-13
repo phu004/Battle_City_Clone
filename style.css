@@ -586,17 +586,17 @@ button.active {
     }
 }
 
-/* Mobile Gamepad - Simplified Version */
+/* Mobile Gamepad - With Larger Buttons */
 .mobile-gamepad {
     display: none;
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     margin: 10px auto 5px auto;
-    padding: 10px;
-    background-color: rgba(45, 45, 68, 0.9);
-    border-radius: 12px;
+    padding: 12px;
+    background-color: rgba(45, 45, 68, 0.92);
+    border-radius: 14px;
     border: 2px solid #555;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
     touch-action: manipulation;
 }
 
@@ -604,13 +604,13 @@ button.active {
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr auto;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
     position: relative;
-    min-height: 120px;
+    min-height: 130px;
 }
 
-/* Movement Area (Left side) */
+/* Movement Area (Left side) - Larger buttons */
 .movement-area {
     grid-column: 1;
     grid-row: 1;
@@ -622,22 +622,22 @@ button.active {
 .dpad-grid {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
 }
 
 .dpad-row {
     display: flex;
     justify-content: center;
-    gap: 2px;
+    gap: 3px;
 }
 
-/* Small, clean D-pad buttons */
+/* Larger, more touch-friendly D-pad buttons */
 .dpad-btn {
-    width: 45px;
-    height: 45px;
+    width: 52px;
+    height: 52px;
     background-color: #333;
     border: 2px solid #555;
-    border-radius: 8px;
+    border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -652,13 +652,14 @@ button.active {
 .dpad-btn:active, .dpad-btn.active {
     background-color: #ffcc00;
     border-color: #ff9900;
+    transform: scale(0.95);
 }
 
 .dpad-btn .arrow {
-    font-size: 18px;
+    font-size: 22px;
     color: #ddd;
     font-weight: bold;
-    text-shadow: 1px 1px 1px #000;
+    text-shadow: 1px 1px 2px #000;
     transition: color 0.08s;
 }
 
@@ -667,11 +668,11 @@ button.active {
 }
 
 .dpad-center {
-    width: 45px;
-    height: 45px;
+    width: 52px;
+    height: 52px;
     background-color: #222;
     border: 2px solid #444;
-    border-radius: 8px;
+    border-radius: 10px;
 }
 
 /* Fire Button (Right side) */
@@ -684,14 +685,14 @@ button.active {
 }
 
 .fire-btn {
-    width: 70px;
-    height: 70px;
+    width: 75px;
+    height: 75px;
     border-radius: 50%;
     border: 3px solid #cc0000;
     background: linear-gradient(145deg, #ff3333, #cc0000);
     color: white;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.08s;
     display: flex;
@@ -703,7 +704,7 @@ button.active {
 }
 
 .fire-btn:active, .fire-btn.active {
-    transform: translateY(3px);
+    transform: translateY(3px) scale(0.95);
     box-shadow: 0 1px 0 #990000, 0 2px 4px rgba(0, 0, 0, 0.2);
     background: linear-gradient(145deg, #ff6666, #ff3333);
 }
@@ -715,22 +716,22 @@ button.active {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-top: 5px;
+    padding-top: 8px;
     border-top: 1px solid #444;
-    margin-top: 5px;
+    margin-top: 8px;
 }
 
 .pause-btn {
-    padding: 8px 25px;
+    padding: 10px 30px;
     background-color: #444;
     border: 2px solid #666;
-    border-radius: 8px;
+    border-radius: 10px;
     color: #fff;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.08s;
-    min-width: 120px;
+    min-width: 140px;
     text-align: center;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -740,7 +741,7 @@ button.active {
     background-color: #ffcc00;
     border-color: #ff9900;
     color: #000;
-    transform: translateY(2px);
+    transform: translateY(2px) scale(0.95);
 }
 
 /* Show gamepad only on mobile */
@@ -777,41 +778,42 @@ button.active {
 /* Landscape mode adjustments */
 @media screen and (max-width: 768px) and (orientation: landscape) {
     .mobile-gamepad {
-        max-width: 350px;
-        margin: 5px auto;
-        padding: 8px;
+        max-width: 380px;
+        margin: 8px auto;
+        padding: 10px;
     }
     
     .gamepad-container {
         grid-template-columns: 1fr 1fr;
         grid-template-rows: 1fr auto;
-        min-height: 100px;
+        min-height: 110px;
+        gap: 10px;
     }
     
     .dpad-btn {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
     }
     
     .dpad-btn .arrow {
-        font-size: 16px;
+        font-size: 20px;
     }
     
     .dpad-center {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
     }
     
     .fire-btn {
-        width: 60px;
-        height: 60px;
-        font-size: 12px;
+        width: 65px;
+        height: 65px;
+        font-size: 14px;
     }
     
     .pause-btn {
-        padding: 6px 20px;
-        font-size: 12px;
-        min-width: 100px;
+        padding: 8px 25px;
+        font-size: 14px;
+        min-width: 120px;
     }
 }
 
@@ -819,40 +821,71 @@ button.active {
 @media screen and (max-width: 480px) {
     .mobile-gamepad {
         max-width: 95%;
-        padding: 8px;
-        border-radius: 10px;
+        padding: 10px;
+        border-radius: 12px;
     }
     
     .dpad-btn {
-        width: 40px;
-        height: 40px;
+        width: 50px;
+        height: 50px;
     }
     
     .dpad-btn .arrow {
-        font-size: 16px;
+        font-size: 20px;
     }
     
     .dpad-center {
-        width: 40px;
-        height: 40px;
+        width: 50px;
+        height: 50px;
     }
     
     .fire-btn {
-        width: 65px;
-        height: 65px;
-        font-size: 13px;
+        width: 70px;
+        height: 70px;
+        font-size: 15px;
     }
     
     .pause-btn {
-        padding: 7px 20px;
-        font-size: 13px;
+        padding: 9px 25px;
+        font-size: 15px;
+        min-width: 130px;
+    }
+}
+
+/* Medium screens - Good balance */
+@media screen and (max-width: 600px) and (min-width: 481px) {
+    .dpad-btn {
+        width: 55px;
+        height: 55px;
+    }
+    
+    .dpad-btn .arrow {
+        font-size: 24px;
+    }
+    
+    .dpad-center {
+        width: 55px;
+        height: 55px;
+    }
+    
+    .fire-btn {
+        width: 80px;
+        height: 80px;
+        font-size: 17px;
+    }
+    
+    .pause-btn {
+        padding: 11px 35px;
+        font-size: 17px;
+        min-width: 150px;
     }
 }
 
 /* Very small screens */
 @media screen and (max-width: 360px) {
     .mobile-gamepad {
-        padding: 6px;
+        padding: 8px;
+        border-radius: 10px;
     }
     
     .gamepad-container {
@@ -860,28 +893,73 @@ button.active {
     }
     
     .dpad-btn {
-        width: 35px;
-        height: 35px;
+        width: 48px;
+        height: 48px;
     }
     
     .dpad-btn .arrow {
-        font-size: 14px;
+        font-size: 20px;
     }
     
     .dpad-center {
-        width: 35px;
-        height: 35px;
+        width: 48px;
+        height: 48px;
     }
     
     .fire-btn {
-        width: 55px;
-        height: 55px;
-        font-size: 12px;
+        width: 65px;
+        height: 65px;
+        font-size: 14px;
     }
     
     .pause-btn {
-        padding: 6px 18px;
-        font-size: 12px;
-        min-width: 100px;
+        padding: 8px 22px;
+        font-size: 14px;
+        min-width: 120px;
     }
+}
+
+/* Extra large buttons for accessibility */
+@media screen and (max-width: 768px) and (min-height: 700px) {
+    .mobile-gamepad {
+        max-width: 450px;
+        padding: 15px;
+    }
+    
+    .gamepad-container {
+        min-height: 150px;
+    }
+    
+    .dpad-btn {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .dpad-btn .arrow {
+        font-size: 26px;
+    }
+    
+    .dpad-center {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .fire-btn {
+        width: 85px;
+        height: 85px;
+        font-size: 18px;
+    }
+    
+    .pause-btn {
+        padding: 12px 35px;
+        font-size: 18px;
+        min-width: 160px;
+    }
+}
+
+/* Prevent text selection on buttons */
+button {
+    user-select: none;
+    -webkit-user-select: none;
+    outline: none;
 }

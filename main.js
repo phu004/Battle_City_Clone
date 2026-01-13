@@ -6,6 +6,7 @@ import { createBulletExplosion, updateParticleEffects, drawParticleEffects, load
 import { isBulletPerpendicularToMovement, checkPerpendicularPathIntersection, willPathIntersectBullet, willWalkIntoPerpendicularBullet, isNextToEnemy, getShootingDirectionForAdjacentEnemy } from './mapAwareness.js';
 import { PowerUp } from './PowerUp.js';
 import { initializeSound } from './soundLoader.js';
+import { MobileGamepad } from  './MobileGamepad.js';
 
 
 // ========== GAME CONSTANTS ==========
@@ -945,7 +946,7 @@ function handleKeyDown(e) {
     // ========== 新增：检查游戏是否结束 ==========
     if (!base.isAlive || gameOver) {
         // 阻止所有按键输入
-        if (['w', 'a', 's', 'd', ' ', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright', 'l'].includes(e.key.toLowerCase())) {
+        if (['arrowup', 'arrowleft', 'arrowdown', 'arrowright', 'l'].includes(e.key.toLowerCase())) {
             e.preventDefault();
         }
         return;
@@ -968,25 +969,9 @@ function handleKeyDown(e) {
             lastHumanDirectionKey = key;
         }
 
-        if (key === ' ' || key === 'l') {
-            if (key === ' ') fireKeyPressed = true;
-            if (key === 'l') humanFireKeyPressed = true;
+        if (key === 'l') {
+            humanFireKeyPressed = true;
             e.preventDefault();
-        }
-    }
-
-    // Add power level upgrade cheat keys (for testing)
-    if (key === '1' || key === '2' || key === '3' || key === '4' || key === '5') {
-        const level = parseInt(key);
-        if (level >= 1 && level <= 5) {
-            // Upgrade AI tank
-            while (AITank.powerLevel < level) {
-                upgradeTankPower(AITank);
-            }
-            // Upgrade human tank
-            while (humanTank.powerLevel < level) {
-                upgradeTankPower(humanTank);
-            }
         }
     }
 
@@ -1003,7 +988,6 @@ function handleKeyUp(e) {
 
         if (key === lastDirectionKey) lastDirectionKey = null;
         if (key === lastHumanDirectionKey) lastHumanDirectionKey = null;
-        if (key === ' ') fireKeyPressed = false;
         if (key === 'l') humanFireKeyPressed = false;
     }
 }
@@ -3588,6 +3572,8 @@ async function init() {
     updateWallCount(brickWalls, steelWalls, bricksDestroyed);
     updateNextSpawnPosition();
     callUpdateAIDisplay();
+
+    window.mobileGamepad = new MobileGamepad();
 
     requestAnimationFrame(gameLoop);
 }
