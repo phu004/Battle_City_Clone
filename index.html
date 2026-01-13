@@ -29,31 +29,16 @@
                 </div>
             </div>
 
-            <!-- Replace the entire mobile-gamepad div with this simplified version -->
             <div class="mobile-gamepad" id="mobileGamepad">
                 <div class="gamepad-container">
-                    <!-- Left side: Movement D-Pad -->
-                    <div class="movement-area">
-                        <div class="dpad-grid">
-                            <div class="dpad-row">
-                                <button class="dpad-btn" data-direction="UP">
-                                    <span class="arrow">↑</span>
-                                </button>
-                            </div>
-                            <div class="dpad-row">
-                                <button class="dpad-btn" data-direction="LEFT">
-                                    <span class="arrow">←</span>
-                                </button>
-                                <div class="dpad-center"></div>
-                                <button class="dpad-btn" data-direction="RIGHT">
-                                    <span class="arrow">→</span>
-                                </button>
-                            </div>
-                            <div class="dpad-row">
-                                <button class="dpad-btn" data-direction="DOWN">
-                                    <span class="arrow">↓</span>
-                                </button>
-                            </div>
+                    <!-- Left side: Gesture D-Pad -->
+                    <div class="gesture-dpad-area">
+                        <div class="gesture-dpad" id="gestureDpad">
+                            <div class="dpad-center"></div>
+                            <div class="dpad-zone up-zone" data-direction="UP"></div>
+                            <div class="dpad-zone down-zone" data-direction="DOWN"></div>
+                            <div class="dpad-zone left-zone" data-direction="LEFT"></div>
+                            <div class="dpad-zone right-zone" data-direction="RIGHT"></div>
                         </div>
                     </div>
 

@@ -586,13 +586,13 @@ button.active {
     }
 }
 
-/* Mobile Gamepad - Tighter Layout */
+/* Mobile Gamepad - Gesture D-Pad */
 .mobile-gamepad {
     display: none;
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     margin: 10px auto 5px auto;
-    padding: 10px;
+    padding: 12px;
     background-color: rgba(45, 45, 68, 0.92);
     border-radius: 14px;
     border: 2px solid #555;
@@ -604,14 +604,14 @@ button.active {
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr auto;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
     position: relative;
-    min-height: 120px;
+    min-height: 130px;
 }
 
-/* Movement Area - Tighter layout */
-.movement-area {
+/* Gesture D-Pad Area */
+.gesture-dpad-area {
     grid-column: 1;
     grid-row: 1;
     display: flex;
@@ -619,63 +619,106 @@ button.active {
     align-items: center;
 }
 
-.dpad-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1px; /* Tighter vertical gap */
-}
-
-.dpad-row {
-    display: flex;
-    justify-content: center;
-    gap: 1px; /* Tighter horizontal gap */
-}
-
-/* Slightly smaller buttons for closer packing */
-.dpad-btn {
-    width: 48px; /* Slightly smaller */
-    height: 48px;
-    background-color: #333;
-    border: 2px solid #555;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.08s;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    padding: 0;
-    margin: 0;
-}
-
-.dpad-btn:active, .dpad-btn.active {
-    background-color: #ffcc00;
-    border-color: #ff9900;
-    transform: scale(0.95);
-}
-
-.dpad-btn .arrow {
-    font-size: 20px; /* Slightly smaller arrow */
-    color: #ddd;
-    font-weight: bold;
-    text-shadow: 1px 1px 1px #000;
-    transition: color 0.08s;
-}
-
-.dpad-btn:active .arrow, .dpad-btn.active .arrow {
-    color: #000;
+.gesture-dpad {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    background-color: #222;
+    border-radius: 20px;
+    border: 2px solid #444;
 }
 
 .dpad-center {
-    width: 48px;
-    height: 48px;
-    background-color: #222;
-    border: 2px solid #444;
-    border-radius: 8px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    background-color: #333;
+    border-radius: 12px;
+    border: 2px solid #555;
+    z-index: 2;
 }
 
-/* Fire Button - Keep it accessible */
+/* Direction Zones - Triangles */
+.dpad-zone {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background-color 0.1s;
+    z-index: 1;
+}
+
+.dpad-zone.active {
+    background-color: rgba(255, 204, 0, 0.4);
+}
+
+/* Up Zone */
+.up-zone {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 40px solid transparent;
+    border-right: 40px solid transparent;
+    border-bottom: 40px solid rgba(255, 255, 255, 0.05);
+}
+
+.up-zone.active {
+    border-bottom-color: rgba(255, 204, 0, 0.4);
+}
+
+/* Down Zone */
+.down-zone {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 40px solid transparent;
+    border-right: 40px solid transparent;
+    border-top: 40px solid rgba(255, 255, 255, 0.05);
+}
+
+.down-zone.active {
+    border-top-color: rgba(255, 204, 0, 0.4);
+}
+
+/* Left Zone */
+.left-zone {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 40px solid transparent;
+    border-bottom: 40px solid transparent;
+    border-right: 40px solid rgba(255, 255, 255, 0.05);
+}
+
+.left-zone.active {
+    border-right-color: rgba(255, 204, 0, 0.4);
+}
+
+/* Right Zone */
+.right-zone {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 40px solid transparent;
+    border-bottom: 40px solid transparent;
+    border-left: 40px solid rgba(255, 255, 255, 0.05);
+}
+
+.right-zone.active {
+    border-left-color: rgba(255, 204, 0, 0.4);
+}
+
+/* Fire Button */
 .action-area {
     grid-column: 2;
     grid-row: 1;
@@ -685,8 +728,8 @@ button.active {
 }
 
 .fire-btn {
-    width: 70px;
-    height: 70px;
+    width: 75px;
+    height: 75px;
     border-radius: 50%;
     border: 3px solid #cc0000;
     background: linear-gradient(145deg, #ff3333, #cc0000);
@@ -704,7 +747,7 @@ button.active {
 }
 
 .fire-btn:active, .fire-btn.active {
-    transform: translateY(3px) scale(0.95);
+    transform: scale(0.95);
     box-shadow: 0 1px 0 #990000, 0 2px 4px rgba(0, 0, 0, 0.2);
     background: linear-gradient(145deg, #ff6666, #ff3333);
 }
@@ -722,10 +765,10 @@ button.active {
 }
 
 .pause-btn {
-    padding: 9px 25px;
+    padding: 10px 30px;
     background-color: #444;
     border: 2px solid #666;
-    border-radius: 8px;
+    border-radius: 10px;
     color: #fff;
     font-weight: bold;
     font-size: 15px;
@@ -741,7 +784,7 @@ button.active {
     background-color: #ffcc00;
     border-color: #ff9900;
     color: #000;
-    transform: translateY(2px) scale(0.95);
+    transform: scale(0.95);
 }
 
 /* Show gamepad only on mobile */
@@ -750,82 +793,44 @@ button.active {
         display: block;
         order: 3;
     }
-    
-    /* Make D-pad even tighter on small screens */
-    .dpad-grid {
-        gap: 0; /* No gap on small screens */
-    }
-    
-    .dpad-row {
-        gap: 0;
-    }
 }
 
-/* Landscape mode - Even tighter */
-@media screen and (max-width: 768px) and (orientation: landscape) {
-    .mobile-gamepad {
-        max-width: 360px;
-        margin: 5px auto;
-        padding: 8px;
-    }
-    
-    .dpad-btn {
-        width: 44px;
-        height: 44px;
-    }
-    
-    .dpad-btn .arrow {
-        font-size: 18px;
-    }
-    
-    .dpad-center {
-        width: 44px;
-        height: 44px;
-    }
-    
-    .fire-btn {
-        width: 60px;
-        height: 60px;
-        font-size: 13px;
-    }
-    
-    /* No gaps at all in landscape for super tight layout */
-    .dpad-grid {
-        gap: 0;
-    }
-    
-    .dpad-row {
-        gap: 0;
-    }
-}
-
-/* Small screens - Very tight layout */
+/* Responsive adjustments */
 @media screen and (max-width: 480px) {
-    .mobile-gamepad {
-        max-width: 95%;
-        padding: 8px;
+    .gesture-dpad {
+        width: 120px;
+        height: 120px;
     }
     
-    .dpad-grid {
-        gap: 0;
+    .up-zone, .down-zone {
+        border-left: 35px solid transparent;
+        border-right: 35px solid transparent;
     }
     
-    .dpad-row {
-        gap: 0;
+    .up-zone {
+        border-bottom: 35px solid rgba(255, 255, 255, 0.05);
     }
     
-    .dpad-btn {
-        width: 46px;
-        height: 46px;
+    .down-zone {
+        border-top: 35px solid rgba(255, 255, 255, 0.05);
     }
     
-    .dpad-btn .arrow {
-        font-size: 18px;
+    .left-zone, .right-zone {
+        border-top: 35px solid transparent;
+        border-bottom: 35px solid transparent;
+    }
+    
+    .left-zone {
+        border-right: 35px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .right-zone {
+        border-left: 35px solid rgba(255, 255, 255, 0.05);
     }
     
     .dpad-center {
-        width: 46px;
-        height: 46px;
+        width: 40px;
+        height: 40px;
     }
     
     .fire-btn {
@@ -835,71 +840,41 @@ button.active {
     }
 }
 
-/* Very small screens - Ultra tight */
-@media screen and (max-width: 360px) {
-    .mobile-gamepad {
-        padding: 6px;
+/* Landscape mode */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    .gesture-dpad {
+        width: 110px;
+        height: 110px;
     }
     
-    .dpad-btn {
-        width: 44px;
-        height: 44px;
+    .up-zone, .down-zone {
+        border-left: 30px solid transparent;
+        border-right: 30px solid transparent;
     }
     
-    .dpad-btn .arrow {
-        font-size: 17px;
+    .up-zone {
+        border-bottom: 30px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .down-zone {
+        border-top: 30px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .left-zone, .right-zone {
+        border-top: 30px solid transparent;
+        border-bottom: 30px solid transparent;
+    }
+    
+    .left-zone {
+        border-right: 30px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .right-zone {
+        border-left: 30px solid rgba(255, 255, 255, 0.05);
     }
     
     .dpad-center {
-        width: 44px;
-        height: 44px;
-    }
-    
-    .fire-btn {
-        width: 60px;
-        height: 60px;
-        font-size: 13px;
-    }
-    
-    .pause-btn {
-        padding: 8px 20px;
-        font-size: 14px;
-        min-width: 110px;
+        width: 35px;
+        height: 35px;
     }
 }
-
-/* Alternative: Make D-pad into a single touch area with visual separation */
-/* Uncomment if you want even tighter controls */
-/*
-.dpad-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 48px);
-    grid-template-rows: repeat(3, 48px);
-    gap: 0;
-}
-
-.dpad-up {
-    grid-column: 2;
-    grid-row: 1;
-}
-
-.dpad-left {
-    grid-column: 1;
-    grid-row: 2;
-}
-
-.dpad-center {
-    grid-column: 2;
-    grid-row: 2;
-}
-
-.dpad-right {
-    grid-column: 3;
-    grid-row: 2;
-}
-
-.dpad-down {
-    grid-column: 2;
-    grid-row: 3;
-}
-*/
