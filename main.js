@@ -3459,12 +3459,12 @@ function setZoomLevel(level) {
 
 function togglePause() {
     if (!gamePaused) {
+        
         sound[9].currentTime = 0;
         sound[9].play();
         sound[10].pause();
         sound[11].pause()
     }
-
     gamePaused = !gamePaused;
     const button = document.getElementById('pauseBtn');
     button.textContent = gamePaused ? 'Resume' : 'Pause';

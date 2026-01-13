@@ -11,8 +11,12 @@ export class MobileGamepad {
         this.activeKeys = new Set();
         this.touchId = null;
         this.isMouseDown = false;
+
+        this.lastPauseTime = 0;
+        this.PAUSE_COOLDOWN = 300; // ms
         
         this.init();
+        console.log("sdf")
     }
     
     init() {
@@ -112,6 +116,7 @@ export class MobileGamepad {
     
     setupPauseButton() {
         this.pauseBtn.addEventListener('click', (e) => {
+            console.log("sdsfdfs")
             e.preventDefault();
             this.pressPause();
             this.pauseBtn.classList.add('active');
@@ -264,8 +269,7 @@ export class MobileGamepad {
     pressPause() {
         const key = 'p';
         const keyCode = 80;
-        
-        // Pause is a single press, not held
+
         this.simulateKeyEvent('keydown', key, keyCode);
         setTimeout(() => {
             this.simulateKeyEvent('keyup', key, keyCode);
@@ -344,47 +348,3 @@ export class MobileGamepad {
     }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Only create gamepad on mobile devices
-    if (window.innerWidth <= 768) {
-        window.mobileGamepad = new MobileGamepad();
-        
-        // Optional: Handle window resize
-        window.addEventListener('resize', () => {
-            if (window.innerWidth <= 768 && !window.mobileGamepad) {
-                window.mobileGamepad = new MobileGamepad();
-            }
-        });
-        
-        // Release all keys when window loses focus
-        window.addEventListener('blur', () => {
-            if (window.mobileGamepad) {
-                window.mobileGamepad.releaseAllKeys();
-            }
-        });
-        
-        // Also release on visibility change
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && window.mobileGamepad) {
-                window.mobileGamepad.releaseAllKeys();
-            }
-        });
-    }
-});
-
-// Optional: Global function to initialize gamepad from your game code
-function initMobileGamepad() {
-    if (window.innerWidth <= 768 && !window.mobileGamepad) {
-        window.mobileGamepad = new MobileGamepad();
-        return true;
-    }
-    return false;
-}
-
-// Optional: Global function to reset gamepad
-function resetMobileGamepad() {
-    if (window.mobileGamepad) {
-        window.mobileGamepad.reset();
-    }
-}
