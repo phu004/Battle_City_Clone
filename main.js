@@ -6,7 +6,7 @@ import { createBulletExplosion, updateParticleEffects, drawParticleEffects, load
 import { isBulletPerpendicularToMovement, checkPerpendicularPathIntersection, willPathIntersectBullet, willWalkIntoPerpendicularBullet, isNextToEnemy, getShootingDirectionForAdjacentEnemy } from './mapAwareness.js';
 import { PowerUp } from './PowerUp.js';
 import { initializeSound } from './soundLoader.js';
-import { MobileGamepad } from  './MobileGamepad.js';
+import { MobileGamepad } from './MobileGamepad.js';
 
 
 // ========== GAME CONSTANTS ==========
@@ -262,7 +262,7 @@ function canShootAdjacentEnemy(enemy) {
 
     if (!isAlignedX && !isAlignedY) return false;
 
-       // Check for walls (brick and steel) but ignore rivers
+    // Check for walls (brick and steel) but ignore rivers
     return !checkObstacleBetween(AITank.bx, AITank.by, enemy.x, enemy.y);
 }
 
@@ -906,7 +906,7 @@ function checkObstacleBetween(x1, y1, x2, y2) {
     y1 += TANK_SIZE / 2;
     x2 += TANK_SIZE / 2;
     y2 += TANK_SIZE / 2;
-    if(Math.abs(x2 - x1) <= 2 && Math.abs(y2 - y1) <= 2)
+    if (Math.abs(x2 - x1) <= 2 && Math.abs(y2 - y1) <= 2)
         return false;
 
     const steps = 20;
@@ -920,7 +920,7 @@ function checkObstacleBetween(x1, y1, x2, y2) {
         // Check brick walls
         for (const wall of brickWalls) {
             if (wall.isAlive()) {
-                if (checkPhysicalCollision(checkX-0.5, checkY-0.5, 1, 1, wall.x, wall.y, 1, 1)) {
+                if (checkPhysicalCollision(checkX - 0.5, checkY - 0.5, 1, 1, wall.x, wall.y, 1, 1)) {
                     return true;
                 }
             }
@@ -929,7 +929,7 @@ function checkObstacleBetween(x1, y1, x2, y2) {
         // Check steel walls
         for (const steel of steelWalls) {
             if (steel.isAlive) {
-                if (checkPhysicalCollision(checkX-0.5, checkY-0.5, 1, 1, steel.x, steel.y, 1, 1)) {
+                if (checkPhysicalCollision(checkX - 0.5, checkY - 0.5, 1, 1, steel.x, steel.y, 1, 1)) {
                     return true;
                 }
             }
@@ -1769,7 +1769,7 @@ function checkBulletPathHitsBase(startX, startY, direction) {
 
 // ========== ENHANCED AI DECISION MAKING ==========
 function updateAI() {
-     
+
     // ========== 新增：检查游戏是否结束 ==========
     if (!base.isAlive || gameOver) {
         aiEnabled = false;
@@ -1812,11 +1812,11 @@ function updateAI() {
         return;
     }
 
-    
+
     if (useSimplePathfindingCountdown > 0)
         useSimplePathfindingCountdown--;
     if (seekPowerUpDirectionChangeCountDown > 0)
-        seekPowerUpDirectionChangeCountDown --;
+        seekPowerUpDirectionChangeCountDown--;
 
     let needToGrabPowerUp = false;
     if (powerUp.isAlive) {
@@ -1826,9 +1826,9 @@ function updateAI() {
             noNeedThisPowerUp = true;
         else if (powerUp.type == "star" && AITank.powerLevel == 4)
             noNeedThisPowerUp = true;
-        else if(powerUp.type == "extraLife" && AITank.lives > humanTank.lives)
+        else if (powerUp.type == "extraLife" && AITank.lives > humanTank.lives)
             noNeedThisPowerUp = true;
-        else if( (powerUp.type == "bomb" || powerUp.type == "shovel" || powerUp.type == "helmet")  && frozeTime.time > 60)
+        else if ((powerUp.type == "bomb" || powerUp.type == "shovel" || powerUp.type == "helmet") && frozeTime.time > 60)
             noNeedThisPowerUp = true;
         else if (isAITankCloseToAnyEnemy())
             noNeedThisPowerUp = true;
@@ -1841,7 +1841,7 @@ function updateAI() {
         if (!needToGrabPowerUp) {
             handleBrickBlockedPath();
             updateAIDisplay();
-            
+
         } else {
             const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
             if (bulletCooldown === 0 &&
@@ -1889,7 +1889,7 @@ function updateAI() {
                 if (useSimplePathfindingCountdown == 0)
                     useSimplePathfindingCountdown = 30;
                 aiStrategy = "Simple Close Approach";
-                
+
 
                 const targetX = TARGET_BLOCK.x; // Aim for 11
                 const targetY = TARGET_BLOCK.y; // Aim for 11
@@ -2098,7 +2098,7 @@ function updateAI() {
             // ========== Original pathfinding for longer distances ==========
             if (useSimplePathfindingCountdown == 0) {
                 aiCurrentPath = findPathToTarget(targetCenterX, targetCenterY);
-                
+
                 aiStrategy = "Moving to Test Block";
 
                 if (aiCurrentPath.length > 0) {
@@ -2111,8 +2111,8 @@ function updateAI() {
                         }
                     }
 
-                    if(!keys[['w', 'd', 's', 'a'][AITank.direction]]){
-                    //    console.log(seekPowerUpDirectionChangeCountDown)
+                    if (!keys[['w', 'd', 's', 'a'][AITank.direction]]) {
+                        //    console.log(seekPowerUpDirectionChangeCountDown)
                         keys['w'] = false;
                         keys['a'] = false;
                         keys['s'] = false;
@@ -2121,7 +2121,7 @@ function updateAI() {
                         seekPowerUpDirectionChangeCountDown = 30;
                     }
 
-                    
+
                     aiAction = "Moving to Test Block (Pathfinding)";
 
                     // Update path progress
@@ -2134,7 +2134,7 @@ function updateAI() {
                             aiCurrentPath.shift();
                         }
                     }
-                    
+
                 } else {
                     console.log("no path found during powre up hunt")
                     // If no path found, try to move directly toward target
@@ -2161,7 +2161,7 @@ function updateAI() {
                     aiAction = "Direct Move to Test Block";
                 }
             }
-           
+
             // Check if we've reached the target (using visual collision)
             if (checkTankVisualCollision(AITank.x, AITank.y, TARGET_BLOCK.x, TARGET_BLOCK.y, TANK_SIZE, TANK_SIZE)) {
                 aiAction = "REACHED TEST BLOCK!";
@@ -2177,7 +2177,7 @@ function updateAI() {
             aiStrategy = "At Target";
             keys['w'] = keys['a'] = keys['s'] = keys['d'] = false; // Stop moving
         }
-        
+
     }
 
     // ========== 正常战斗逻辑 ==========
@@ -2187,7 +2187,7 @@ function updateAI() {
         maintainCurrentDirection();
     }
 
-    
+
     // ========== 对齐到网格 ==========
     if (AITank.needsAlignment) {
         alignTankToGrid(AITank);
@@ -2384,15 +2384,15 @@ function moveToGetLineOfSight(brick, distance) {
 }
 
 function handleCloseCombat() {
-    
+
     aiTargetEnemy = findPriorityEnemy();
     if (aiTargetEnemy && isNextToEnemy(aiTargetEnemy, AITank, IMMEDIATE_SHOOT_DISTANCE, CLOSE_COMBAT_DISTANCE)) {
         nextToEnemy = true;
 
         // 当紧邻敌人时立即摧毁
         if (canShootAdjacentEnemy(aiTargetEnemy)) {
-             
-           
+
+
             const shootDir = getShootingDirectionForAdjacentEnemy(aiTargetEnemy, AITank);
             if (shootDir !== null && AITank.direction !== shootDir) {
                 changeTankDirection(AITank, shootDir);
@@ -2401,10 +2401,10 @@ function handleCloseCombat() {
             alignTankToGrid(AITank);
 
             const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
-            
+
             if (AITank.canShoot && bulletCooldown === 0 &&
                 bullets.filter(b => b.isAITank).length < maxBullets) {
-                
+
                 firePlayerBullet('ai');
                 aiShooting = true;
                 aiShootCooldown = AI_SHOOT_COOLDOWN;
@@ -2551,23 +2551,23 @@ function isAITankCloseToAnyEnemy() {
         if (isNextToEnemy(enemy, AITank, 2, 8)) {
             return true;
         }
-        
+
         // Additional check: Enemy is facing the AI tank AND in same row/column AND has clear line of fire
         const dx = Math.abs(enemy.x - AITank.x);
         const dy = Math.abs(enemy.y - AITank.y);
-        
+
         // Check if enemy is in same row (aligned horizontally) or same column (aligned vertically)
         const inSameRow = dy < 1; // Within 1 cell vertically
         const inSameColumn = dx < 1; // Within 1 cell horizontally
-        
+
         if (inSameRow || inSameColumn) {
             // Check if enemy is facing the AI tank
             const isFacingAI = isEnemyFacingAITank(enemy);
-            
+
             if (isFacingAI) {
                 // Check for clear line of fire (no obstacles between enemy and AI)
                 const lineClear = !checkObstacleBetween(enemy.x, enemy.y, AITank.x, AITank.y);
-                
+
                 if (lineClear) {
                     return true;
                 }
@@ -2810,20 +2810,20 @@ function callUpdateAIDisplay() {
 // ========== TANK UPDATE FUNCTIONS ==========
 function updateTank(tank, isAI = true) {
 
-    if(!isAI){
-        if(humanTank.moving){
+    if (!isAI) {
+        if (humanTank.moving) {
             sound[10].play();
             sound[11].pause();
-        }else{
-             sound[10].pause();
-             sound[11].play();
-             if(frozeTime.time > 0 || enemyTanks.length == 0)
+        } else {
+            sound[10].pause();
+            sound[11].play();
+            if (frozeTime.time > 0 || enemyTanks.length == 0)
                 sound[11].pause();
-            
+
         }
     }
-   
-    
+
+
     if (!tank.isAlive) {
         if (tank.respawnTimer == 52) {
             if (isAI && AITank.lives > 0)
@@ -2855,7 +2855,7 @@ function updateTank(tank, isAI = true) {
         if (keys['s']) moveDirection = 2;
         if (keys['a']) moveDirection = 3;
         if (keys['d']) moveDirection = 1;
-    
+
     } else {
         // Human player controls
         const maxBullets = canShootMultipleBullets(tank) ? MAX_BULLET : 1;
@@ -3186,16 +3186,16 @@ function updateBullets() {
         // If bullet hit something, destroy it
         if (hitSteel || hitBrick) {
             createBulletExplosion(bullet.x, bullet.y, BULLET_SIZE, CELL_SIZE, particleEffects);
-            
+
             // Apply cooldown based on which tank fired the bullet
             if (bullet.isAITank) {
-                if(AITank.powerLevel <= 3 && hitSteel){
-                    sound[1].currentTime=0;
+                if (AITank.powerLevel <= 3 && hitSteel) {
+                    sound[1].currentTime = 0;
                     sound[1].play();
                 }
 
-                if(hitBrick || (AITank.powerLevel > 3 && hitSteel)){
-                    sound[2].currentTime=0;
+                if (hitBrick || (AITank.powerLevel > 3 && hitSteel)) {
+                    sound[2].currentTime = 0;
                     sound[2].play();
                 }
 
@@ -3203,12 +3203,12 @@ function updateBullets() {
                 bulletCooldown = getBulletCooldown(AITank);
             }
             if (bullet.isHuman) {
-                if(humanTank.powerLevel <= 3 && hitSteel){
-                    sound[1].currentTime=0;
+                if (humanTank.powerLevel <= 3 && hitSteel) {
+                    sound[1].currentTime = 0;
                     sound[1].play();
                 }
-                 if(hitBrick || (humanTank.powerLevel > 3 && hitSteel)){
-                    sound[2].currentTime=0;
+                if (hitBrick || (humanTank.powerLevel > 3 && hitSteel)) {
+                    sound[2].currentTime = 0;
                     sound[2].play();
                 }
 
@@ -3402,7 +3402,7 @@ function firePlayerBullet(playerType) {
 
         bulletCooldown = getBulletCooldown(tank);
     } else {
-        
+
         sound[0].currentTime = 0;
         sound[0].play();
         tank = humanTank;
@@ -3458,7 +3458,7 @@ function setZoomLevel(level) {
 }
 
 function togglePause() {
-    if(!gamePaused){
+    if (!gamePaused) {
         sound[9].currentTime = 0;
         sound[9].play();
         sound[10].pause();
@@ -3507,7 +3507,7 @@ function gameLoop() {
         requestAnimationFrame(gameLoop);
         return;
     }
-    
+
     updateTank(AITank, true);
     updateTank(humanTank, false);
     updateEnemyTanks();
@@ -3534,7 +3534,7 @@ function gameLoop() {
     drawBushes(ctx, bushes, zoomLevel, CELL_SIZE);
     drawParticleEffects(CELL_SIZE, zoomLevel, ctx, particleEffects);
 
-   
+
     powerUp.draw(ctx, CELL_SIZE * zoomLevel, frameCount, zoomLevel);
 
     // Draw prediction visuals
@@ -3574,6 +3574,16 @@ async function init() {
     callUpdateAIDisplay();
 
     window.mobileGamepad = new MobileGamepad();
+    window.addEventListener('blur', () => {
+        if (window.mobileGamepad) {
+            window.mobileGamepad.releaseAllKeys();
+        }
+    });
+    document.querySelectorAll('.dpad-btn, .fire-btn, .pause-btn').forEach(btn => {
+        btn.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        });
+    });
 
     requestAnimationFrame(gameLoop);
 }
