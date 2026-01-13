@@ -586,9 +586,7 @@ button.active {
     }
 }
 
-/* MOBILE GAMEPAD STYLES - Add to your existing style.css */
-
-/* Mobile Gamepad - T-Shape with Sliding Gesture */
+/* Mobile Gamepad - Better Proportions */
 .mobile-gamepad {
     display: none;
     width: 100%;
@@ -609,7 +607,7 @@ button.active {
     gap: 12px;
     align-items: center;
     position: relative;
-    min-height: 130px;
+    min-height: 140px; /* Increased for better proportions */
 }
 
 /* T-Shape D-Pad with Sliding Zones */
@@ -623,8 +621,8 @@ button.active {
 
 .t-shape-dpad {
     position: relative;
-    width: 160px;
-    height: 120px;
+    width: 170px; /* Slightly wider */
+    height: 130px; /* Slightly taller */
     background-color: #222;
     border-radius: 12px;
     border: 2px solid #444;
@@ -644,52 +642,49 @@ button.active {
 }
 
 .zone-visual .arrow {
-    font-size: 24px;
+    font-size: 26px; /* Slightly larger */
     color: #ddd;
     font-weight: bold;
     text-shadow: 1px 1px 2px #000;
 }
 
-/* Up Zone Visual */
+/* ADJUSTED SIZES: Balanced proportions */
 .up-zone-visual {
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 80px;
-    height: 50px;
-    border-radius: 8px 8px 0 0;
+    width: 80px; /* Increased from 70px */
+    height: 50px; /* Increased from 40px */
+    border-radius: 10px 10px 0 0;
     border-bottom: none;
 }
 
-/* Left Zone Visual */
 .left-zone-visual {
-    top: 50px;
+    top: 50px; /* Adjusted for larger up button */
     left: 0;
-    width: 40px;
-    height: 70px;
-    border-radius: 0 0 0 8px;
+    width: 55px; /* Good size for left thumb */
+    height: 80px;
+    border-radius: 0 0 0 10px;
     border-right: none;
 }
 
-/* Down Zone Visual */
 .down-zone-visual {
-    top: 50px;
-    left: 40px;
-    width: 80px;
-    height: 70px;
+    top: 50px; /* Adjusted for larger up button */
+    left: 55px; /* Adjusted for larger left button */
+    width: 60px;
+    height: 80px;
     border-radius: 0;
     border-top: none;
     border-left: none;
     border-right: none;
 }
 
-/* Right Zone Visual */
 .right-zone-visual {
-    top: 50px;
-    left: 120px;
-    width: 40px;
-    height: 70px;
-    border-radius: 0 0 8px 0;
+    top: 50px; /* Adjusted for larger up button */
+    left: 115px; /* Adjusted positions */
+    width: 55px; /* Good size for right thumb */
+    height: 80px;
+    border-radius: 0 0 10px 0;
     border-left: none;
 }
 
@@ -713,14 +708,14 @@ button.active {
 }
 
 .fire-btn {
-    width: 75px;
-    height: 75px;
+    width: 80px; /* Slightly larger */
+    height: 80px;
     border-radius: 50%;
     border: 3px solid #cc0000;
     background: linear-gradient(145deg, #ff3333, #cc0000);
     color: white;
     font-weight: bold;
-    font-size: 15px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.08s;
     display: flex;
@@ -744,22 +739,22 @@ button.active {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-top: 8px;
+    padding-top: 10px;
     border-top: 1px solid #444;
-    margin-top: 8px;
+    margin-top: 10px;
 }
 
 .pause-btn {
-    padding: 10px 30px;
+    padding: 12px 35px;
     background-color: #444;
     border: 2px solid #666;
     border-radius: 10px;
     color: #fff;
     font-weight: bold;
-    font-size: 15px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.08s;
-    min-width: 130px;
+    min-width: 140px;
     text-align: center;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -777,5 +772,128 @@ button.active {
     .mobile-gamepad {
         display: block;
         order: 3;
+    }
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 480px) {
+    .t-shape-dpad {
+        width: 150px;
+        height: 115px;
+    }
+    
+    .up-zone-visual {
+        width: 70px;
+        height: 45px;
+    }
+    
+    .left-zone-visual {
+        top: 45px;
+        width: 50px;
+        height: 70px;
+    }
+    
+    .down-zone-visual {
+        top: 45px;
+        left: 50px;
+        width: 50px;
+        height: 70px;
+    }
+    
+    .right-zone-visual {
+        top: 45px;
+        left: 100px;
+        width: 50px;
+        height: 70px;
+    }
+    
+    .zone-visual .arrow {
+        font-size: 22px;
+    }
+    
+    .fire-btn {
+        width: 70px;
+        height: 70px;
+        font-size: 15px;
+    }
+}
+
+/* Landscape mode */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    .t-shape-dpad {
+        width: 150px;
+        height: 110px;
+    }
+    
+    .up-zone-visual {
+        width: 65px;
+        height: 40px;
+    }
+    
+    .left-zone-visual {
+        top: 40px;
+        width: 45px;
+        height: 70px;
+    }
+    
+    .down-zone-visual {
+        top: 40px;
+        left: 45px;
+        width: 60px;
+        height: 70px;
+    }
+    
+    .right-zone-visual {
+        top: 40px;
+        left: 105px;
+        width: 45px;
+        height: 70px;
+    }
+    
+    .zone-visual .arrow {
+        font-size: 20px;
+    }
+    
+    .fire-btn {
+        width: 65px;
+        height: 65px;
+        font-size: 14px;
+    }
+}
+
+/* Very small screens */
+@media screen and (max-width: 360px) {
+    .t-shape-dpad {
+        width: 140px;
+        height: 105px;
+    }
+    
+    .up-zone-visual {
+        width: 60px;
+        height: 40px;
+    }
+    
+    .left-zone-visual {
+        top: 40px;
+        width: 45px;
+        height: 65px;
+    }
+    
+    .down-zone-visual {
+        top: 40px;
+        left: 45px;
+        width: 50px;
+        height: 65px;
+    }
+    
+    .right-zone-visual {
+        top: 40px;
+        left: 95px;
+        width: 45px;
+        height: 65px;
+    }
+    
+    .zone-visual .arrow {
+        font-size: 18px;
     }
 }

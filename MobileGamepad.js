@@ -1,4 +1,4 @@
-// Complete Mobile Gamepad with T-Shape Sliding D-Pad
+// Complete Mobile Gamepad with Fixed Responsive Areas
 export class MobileGamepad {
     constructor() {
         this.gamepad = document.getElementById('mobileGamepad');
@@ -176,17 +176,42 @@ export class MobileGamepad {
         const x = clientX - rect.left;
         const y = clientY - rect.top;
         
-        // Define T-shape zones programmatically
+        // Define T-shape zones based on CSS dimensions
+        // Base dimensions: width=160, height=120
+        const baseWidth = 160;
+        const baseHeight = 120;
+        
+        // Zone definitions (matches CSS)
         const zoneBounds = {
-            'UP': { x1: 40, y1: 0, x2: 120, y2: 50 },
-            'LEFT': { x1: 0, y1: 50, x2: 40, y2: 120 },
-            'DOWN': { x1: 40, y1: 50, x2: 120, y2: 120 },
-            'RIGHT': { x1: 120, y1: 50, x2: 160, y2: 120 }
+            'UP': { 
+                x1: (baseWidth - 70) / 2, // Center 70px wide button
+                y1: 0, 
+                x2: (baseWidth - 70) / 2 + 70, 
+                y2: 40 
+            },
+            'LEFT': { 
+                x1: 0, 
+                y1: 40, 
+                x2: 50, 
+                y2: 120 
+            },
+            'DOWN': { 
+                x1: 50, // Start after left button
+                y1: 40, 
+                x2: 110, // 50 + 60
+                y2: 120 
+            },
+            'RIGHT': { 
+                x1: 110, // Start after down button
+                y1: 40, 
+                x2: 160, // 110 + 50
+                y2: 120 
+            }
         };
         
         // Adjust for responsive sizes
-        const widthScale = rect.width / 160;
-        const heightScale = rect.height / 120;
+        const widthScale = rect.width / baseWidth;
+        const heightScale = rect.height / baseHeight;
         
         // Find which zone the touch is in
         let newDirection = null;
@@ -203,19 +228,20 @@ export class MobileGamepad {
             }
         }
         
-        // If touch is in neutral area (center of DOWN zone), release all
-        if (newDirection === 'DOWN') {
-            const centerX = rect.width / 2;
-            const centerY = 50 * heightScale + (70 * heightScale) / 2;
-            const neutralRadius = 30 * Math.min(widthScale, heightScale);
-            
-            const dx = x - centerX;
-            const dy = y - centerY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < neutralRadius) {
-                newDirection = null;
-            }
+        // If touch is in dead zone (center of D-pad area), release all
+        // Create a small dead zone in the center for stopping
+        const centerX = rect.width / 2;
+        const centerY = 40 * heightScale + (80 * heightScale) / 2;
+        const deadZoneRadius = 15 * Math.min(widthScale, heightScale);
+        
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // If in dead zone and not currently pressing a direction, release
+        if (distance < deadZoneRadius && !newDirection) {
+            this.releaseAllDirections();
+            return;
         }
         
         // Update direction if changed
@@ -236,11 +262,34 @@ export class MobileGamepad {
     }
     
     showActiveHighlight(direction, rect, widthScale, heightScale) {
+        const baseWidth = 160;
+        const baseHeight = 120;
+        
         const zoneBounds = {
-            'UP': { x1: 40, y1: 0, x2: 120, y2: 50 },
-            'LEFT': { x1: 0, y1: 50, x2: 40, y2: 120 },
-            'DOWN': { x1: 40, y1: 50, x2: 120, y2: 120 },
-            'RIGHT': { x1: 120, y1: 50, x2: 160, y2: 120 }
+            'UP': { 
+                x1: (baseWidth - 70) / 2, 
+                y1: 0, 
+                x2: (baseWidth - 70) / 2 + 70, 
+                y2: 40 
+            },
+            'LEFT': { 
+                x1: 0, 
+                y1: 40, 
+                x2: 50, 
+                y2: 120 
+            },
+            'DOWN': { 
+                x1: 50, 
+                y1: 40, 
+                x2: 110, 
+                y2: 120 
+            },
+            'RIGHT': { 
+                x1: 110, 
+                y1: 40, 
+                x2: 160, 
+                y2: 120 
+            }
         };
         
         const bounds = zoneBounds[direction];
@@ -299,7 +348,6 @@ export class MobileGamepad {
         this.hideActiveHighlight();
     }
     
-    // ... (rest of the methods remain the same: pressFire, releaseFire, etc.)
     pressFire() {
         const key = 'l';
         const keyCode = 76;
@@ -393,27 +441,3 @@ export class MobileGamepad {
     }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.innerWidth <= 768) {
-        window.mobileGamepad = new MobileGamepad();
-        
-        window.addEventListener('resize', () => {
-            if (window.innerWidth <= 768 && !window.mobileGamepad) {
-                window.mobileGamepad = new MobileGamepad();
-            }
-        });
-        
-        window.addEventListener('blur', () => {
-            if (window.mobileGamepad) {
-                window.mobileGamepad.releaseAllKeys();
-            }
-        });
-        
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && window.mobileGamepad) {
-                window.mobileGamepad.releaseAllKeys();
-            }
-        });
-    }
-});
