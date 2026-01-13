@@ -586,7 +586,7 @@ button.active {
     }
 }
 
-/* Mobile Gamepad - Better Proportions */
+/* Mobile Gamepad - Gesture D-Pad */
 .mobile-gamepad {
     display: none;
     width: 100%;
@@ -607,10 +607,10 @@ button.active {
     gap: 12px;
     align-items: center;
     position: relative;
-    min-height: 140px; /* Increased for better proportions */
+    min-height: 130px;
 }
 
-/* T-Shape D-Pad with Sliding Zones */
+/* Gesture D-Pad Area */
 .gesture-dpad-area {
     grid-column: 1;
     grid-row: 1;
@@ -619,83 +619,103 @@ button.active {
     align-items: center;
 }
 
-.t-shape-dpad {
+.gesture-dpad {
     position: relative;
-    width: 170px; /* Slightly wider */
-    height: 130px; /* Slightly taller */
+    width: 140px;
+    height: 140px;
     background-color: #222;
-    border-radius: 12px;
+    border-radius: 20px;
     border: 2px solid #444;
-    overflow: hidden;
 }
 
-/* Zone Areas (for visual layout only) */
-.zone-visual {
+.dpad-center {
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
     background-color: #333;
+    border-radius: 12px;
     border: 2px solid #555;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: none; /* Don't interfere with touch events */
+    z-index: 2;
+}
+
+/* Direction Zones - Triangles */
+.dpad-zone {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background-color 0.1s;
     z-index: 1;
 }
 
-.zone-visual .arrow {
-    font-size: 26px; /* Slightly larger */
-    color: #ddd;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px #000;
+.dpad-zone.active {
+    background-color: rgba(255, 204, 0, 0.4);
 }
 
-/* ADJUSTED SIZES: Balanced proportions */
-.up-zone-visual {
+/* Up Zone */
+.up-zone {
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 80px; /* Increased from 70px */
-    height: 50px; /* Increased from 40px */
-    border-radius: 10px 10px 0 0;
-    border-bottom: none;
+    width: 0;
+    height: 0;
+    border-left: 40px solid transparent;
+    border-right: 40px solid transparent;
+    border-bottom: 40px solid rgba(255, 255, 255, 0.05);
 }
 
-.left-zone-visual {
-    top: 50px; /* Adjusted for larger up button */
+.up-zone.active {
+    border-bottom-color: rgba(255, 204, 0, 0.4);
+}
+
+/* Down Zone */
+.down-zone {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 40px solid transparent;
+    border-right: 40px solid transparent;
+    border-top: 40px solid rgba(255, 255, 255, 0.05);
+}
+
+.down-zone.active {
+    border-top-color: rgba(255, 204, 0, 0.4);
+}
+
+/* Left Zone */
+.left-zone {
     left: 0;
-    width: 55px; /* Good size for left thumb */
-    height: 80px;
-    border-radius: 0 0 0 10px;
-    border-right: none;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 40px solid transparent;
+    border-bottom: 40px solid transparent;
+    border-right: 40px solid rgba(255, 255, 255, 0.05);
 }
 
-.down-zone-visual {
-    top: 50px; /* Adjusted for larger up button */
-    left: 55px; /* Adjusted for larger left button */
-    width: 60px;
-    height: 80px;
-    border-radius: 0;
-    border-top: none;
-    border-left: none;
-    border-right: none;
+.left-zone.active {
+    border-right-color: rgba(255, 204, 0, 0.4);
 }
 
-.right-zone-visual {
-    top: 50px; /* Adjusted for larger up button */
-    left: 115px; /* Adjusted positions */
-    width: 55px; /* Good size for right thumb */
-    height: 80px;
-    border-radius: 0 0 10px 0;
-    border-left: none;
+/* Right Zone */
+.right-zone {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 40px solid transparent;
+    border-bottom: 40px solid transparent;
+    border-left: 40px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Active highlight overlay */
-.active-highlight {
-    position: absolute;
-    background-color: rgba(255, 204, 0, 0.4);
-    border: 2px solid rgba(255, 153, 0, 0.6);
-    z-index: 2;
-    pointer-events: none;
-    transition: all 0.1s;
+.right-zone.active {
+    border-left-color: rgba(255, 204, 0, 0.4);
 }
 
 /* Fire Button */
@@ -708,14 +728,14 @@ button.active {
 }
 
 .fire-btn {
-    width: 80px; /* Slightly larger */
-    height: 80px;
+    width: 75px;
+    height: 75px;
     border-radius: 50%;
     border: 3px solid #cc0000;
     background: linear-gradient(145deg, #ff3333, #cc0000);
     color: white;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
     transition: all 0.08s;
     display: flex;
@@ -739,22 +759,22 @@ button.active {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-top: 10px;
+    padding-top: 8px;
     border-top: 1px solid #444;
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 .pause-btn {
-    padding: 12px 35px;
+    padding: 10px 30px;
     background-color: #444;
     border: 2px solid #666;
     border-radius: 10px;
     color: #fff;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
     transition: all 0.08s;
-    min-width: 140px;
+    min-width: 130px;
     text-align: center;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -777,81 +797,40 @@ button.active {
 
 /* Responsive adjustments */
 @media screen and (max-width: 480px) {
-    .t-shape-dpad {
-        width: 150px;
-        height: 115px;
+    .gesture-dpad {
+        width: 120px;
+        height: 120px;
     }
     
-    .up-zone-visual {
-        width: 70px;
-        height: 45px;
+    .up-zone, .down-zone {
+        border-left: 35px solid transparent;
+        border-right: 35px solid transparent;
     }
     
-    .left-zone-visual {
-        top: 45px;
-        width: 50px;
-        height: 70px;
+    .up-zone {
+        border-bottom: 35px solid rgba(255, 255, 255, 0.05);
     }
     
-    .down-zone-visual {
-        top: 45px;
-        left: 50px;
-        width: 50px;
-        height: 70px;
+    .down-zone {
+        border-top: 35px solid rgba(255, 255, 255, 0.05);
     }
     
-    .right-zone-visual {
-        top: 45px;
-        left: 100px;
-        width: 50px;
-        height: 70px;
+    .left-zone, .right-zone {
+        border-top: 35px solid transparent;
+        border-bottom: 35px solid transparent;
     }
     
-    .zone-visual .arrow {
-        font-size: 22px;
+    .left-zone {
+        border-right: 35px solid rgba(255, 255, 255, 0.05);
     }
     
-    .fire-btn {
-        width: 70px;
-        height: 70px;
-        font-size: 15px;
-    }
-}
-
-/* Landscape mode */
-@media screen and (max-width: 768px) and (orientation: landscape) {
-    .t-shape-dpad {
-        width: 150px;
-        height: 110px;
+    .right-zone {
+        border-left: 35px solid rgba(255, 255, 255, 0.05);
     }
     
-    .up-zone-visual {
-        width: 65px;
+    .dpad-center {
+        width: 40px;
         height: 40px;
-    }
-    
-    .left-zone-visual {
-        top: 40px;
-        width: 45px;
-        height: 70px;
-    }
-    
-    .down-zone-visual {
-        top: 40px;
-        left: 45px;
-        width: 60px;
-        height: 70px;
-    }
-    
-    .right-zone-visual {
-        top: 40px;
-        left: 105px;
-        width: 45px;
-        height: 70px;
-    }
-    
-    .zone-visual .arrow {
-        font-size: 20px;
     }
     
     .fire-btn {
@@ -861,39 +840,41 @@ button.active {
     }
 }
 
-/* Very small screens */
-@media screen and (max-width: 360px) {
-    .t-shape-dpad {
-        width: 140px;
-        height: 105px;
+/* Landscape mode */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    .gesture-dpad {
+        width: 110px;
+        height: 110px;
     }
     
-    .up-zone-visual {
-        width: 60px;
-        height: 40px;
+    .up-zone, .down-zone {
+        border-left: 30px solid transparent;
+        border-right: 30px solid transparent;
     }
     
-    .left-zone-visual {
-        top: 40px;
-        width: 45px;
-        height: 65px;
+    .up-zone {
+        border-bottom: 30px solid rgba(255, 255, 255, 0.05);
     }
     
-    .down-zone-visual {
-        top: 40px;
-        left: 45px;
-        width: 50px;
-        height: 65px;
+    .down-zone {
+        border-top: 30px solid rgba(255, 255, 255, 0.05);
     }
     
-    .right-zone-visual {
-        top: 40px;
-        left: 95px;
-        width: 45px;
-        height: 65px;
+    .left-zone, .right-zone {
+        border-top: 30px solid transparent;
+        border-bottom: 30px solid transparent;
     }
     
-    .zone-visual .arrow {
-        font-size: 18px;
+    .left-zone {
+        border-right: 30px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .right-zone {
+        border-left: 30px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .dpad-center {
+        width: 35px;
+        height: 35px;
     }
 }

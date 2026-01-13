@@ -1,8 +1,9 @@
-// Complete Mobile Gamepad with Fixed Responsive Areas
+// Complete Mobile Gamepad with Gesture D-Pad
 export class MobileGamepad {
     constructor() {
         this.gamepad = document.getElementById('mobileGamepad');
         this.gestureDpad = document.getElementById('gestureDpad');
+        this.dpadZones = document.querySelectorAll('.dpad-zone');
         this.fireBtn = document.querySelector('.fire-btn');
         this.pauseBtn = document.getElementById('mobilePauseBtn');
         
@@ -10,13 +11,11 @@ export class MobileGamepad {
         this.activeKeys = new Set();
         this.touchId = null;
         this.isMouseDown = false;
-        this.activeHighlight = null;
         
         this.init();
     }
     
     init() {
-        this.createActiveHighlight();
         this.setupGestureDpad();
         this.setupFireButton();
         this.setupPauseButton();
@@ -26,22 +25,14 @@ export class MobileGamepad {
         
         // Prevent scrolling when touching gamepad
         this.gamepad.addEventListener('touchmove', (e) => {
-            if (e.target.closest('.t-shape-dpad, .fire-btn, .pause-btn')) {
+            if (e.target.closest('.gesture-dpad, .fire-btn, .pause-btn')) {
                 e.preventDefault();
             }
         }, { passive: false });
     }
     
-    createActiveHighlight() {
-        // Create a div for active direction highlighting
-        this.activeHighlight = document.createElement('div');
-        this.activeHighlight.className = 'active-highlight';
-        this.gestureDpad.appendChild(this.activeHighlight);
-        this.hideActiveHighlight();
-    }
-    
     setupGestureDpad() {
-        // Touch events for the entire D-pad
+        // Touch events
         this.gestureDpad.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.handleTouchStart(e);
@@ -132,7 +123,7 @@ export class MobileGamepad {
         if (this.touchId === null) {
             const touch = e.touches[0];
             this.touchId = touch.identifier;
-            this.processTouch(touch.clientX, touch.clientY);
+            this.processDirection(touch.clientX, touch.clientY);
         }
     }
     
@@ -141,7 +132,7 @@ export class MobileGamepad {
             // Find our specific touch
             for (let touch of e.touches) {
                 if (touch.identifier === this.touchId) {
-                    this.processTouch(touch.clientX, touch.clientY);
+                    this.processDirection(touch.clientX, touch.clientY);
                     break;
                 }
             }
@@ -150,19 +141,19 @@ export class MobileGamepad {
     
     handleTouchEnd(e) {
         if (this.touchId !== null) {
-            this.touchId = null;
             this.releaseAllDirections();
+            this.touchId = null;
         }
     }
     
     handleMouseDown(e) {
         this.isMouseDown = true;
-        this.processTouch(e.clientX, e.clientY);
+        this.processDirection(e.clientX, e.clientY);
     }
     
     handleMouseMove(e) {
         if (this.isMouseDown) {
-            this.processTouch(e.clientX, e.clientY);
+            this.processDirection(e.clientX, e.clientY);
         }
     }
     
@@ -171,153 +162,47 @@ export class MobileGamepad {
         this.releaseAllDirections();
     }
     
-    processTouch(clientX, clientY) {
+    processDirection(clientX, clientY) {
         const rect = this.gestureDpad.getBoundingClientRect();
         const x = clientX - rect.left;
         const y = clientY - rect.top;
-        
-        // Define T-shape zones based on CSS dimensions
-        // Base dimensions: width=160, height=120
-        const baseWidth = 160;
-        const baseHeight = 120;
-        
-        // Zone definitions (matches CSS)
-        const zoneBounds = {
-            'UP': { 
-                x1: (baseWidth - 70) / 2, // Center 70px wide button
-                y1: 0, 
-                x2: (baseWidth - 70) / 2 + 70, 
-                y2: 40 
-            },
-            'LEFT': { 
-                x1: 0, 
-                y1: 40, 
-                x2: 50, 
-                y2: 120 
-            },
-            'DOWN': { 
-                x1: 50, // Start after left button
-                y1: 40, 
-                x2: 110, // 50 + 60
-                y2: 120 
-            },
-            'RIGHT': { 
-                x1: 110, // Start after down button
-                y1: 40, 
-                x2: 160, // 110 + 50
-                y2: 120 
-            }
-        };
-        
-        // Adjust for responsive sizes
-        const widthScale = rect.width / baseWidth;
-        const heightScale = rect.height / baseHeight;
-        
-        // Find which zone the touch is in
-        let newDirection = null;
-        
-        for (const [direction, bounds] of Object.entries(zoneBounds)) {
-            const scaledX1 = bounds.x1 * widthScale;
-            const scaledX2 = bounds.x2 * widthScale;
-            const scaledY1 = bounds.y1 * heightScale;
-            const scaledY2 = bounds.y2 * heightScale;
-            
-            if (x >= scaledX1 && x <= scaledX2 && y >= scaledY1 && y <= scaledY2) {
-                newDirection = direction;
-                break;
-            }
-        }
-        
-        // If touch is in dead zone (center of D-pad area), release all
-        // Create a small dead zone in the center for stopping
         const centerX = rect.width / 2;
-        const centerY = 40 * heightScale + (80 * heightScale) / 2;
-        const deadZoneRadius = 15 * Math.min(widthScale, heightScale);
+        const centerY = rect.height / 2;
         
+        // Calculate angle and distance from center
         const dx = x - centerX;
         const dy = y - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // If in dead zone and not currently pressing a direction, release
-        if (distance < deadZoneRadius && !newDirection) {
+        // If touch is too close to center, do nothing
+        if (distance < 20) {
             this.releaseAllDirections();
             return;
         }
         
-        // Update direction if changed
+        // Calculate angle in degrees (0° = right, 90° = up)
+        let angle = Math.atan2(-dy, dx) * (180 / Math.PI);
+        if (angle < 0) angle += 360;
+        
+        let newDirection = null;
+        
+        // Determine direction based on angle
+        if (angle >= 45 && angle < 135) {
+            newDirection = 'UP';    // 45° to 135°
+        } else if (angle >= 135 && angle < 225) {
+            newDirection = 'LEFT';  // 135° to 225°
+        } else if (angle >= 225 && angle < 315) {
+            newDirection = 'DOWN';  // 225° to 315°
+        } else {
+            newDirection = 'RIGHT'; // 315° to 45°
+        }
+        
+        // Only update if direction changed
         if (newDirection !== this.activeDirection) {
-            if (this.activeDirection) {
-                this.releaseDirection(this.activeDirection);
-            }
-            
+            this.releaseAllDirections();
             this.activeDirection = newDirection;
-            
-            if (newDirection) {
-                this.pressDirection(newDirection);
-                this.showActiveHighlight(newDirection, rect, widthScale, heightScale);
-            } else {
-                this.hideActiveHighlight();
-            }
+            this.pressDirection(newDirection);
         }
-    }
-    
-    showActiveHighlight(direction, rect, widthScale, heightScale) {
-        const baseWidth = 160;
-        const baseHeight = 120;
-        
-        const zoneBounds = {
-            'UP': { 
-                x1: (baseWidth - 70) / 2, 
-                y1: 0, 
-                x2: (baseWidth - 70) / 2 + 70, 
-                y2: 40 
-            },
-            'LEFT': { 
-                x1: 0, 
-                y1: 40, 
-                x2: 50, 
-                y2: 120 
-            },
-            'DOWN': { 
-                x1: 50, 
-                y1: 40, 
-                x2: 110, 
-                y2: 120 
-            },
-            'RIGHT': { 
-                x1: 110, 
-                y1: 40, 
-                x2: 160, 
-                y2: 120 
-            }
-        };
-        
-        const bounds = zoneBounds[direction];
-        if (!bounds) {
-            this.hideActiveHighlight();
-            return;
-        }
-        
-        this.activeHighlight.style.display = 'block';
-        this.activeHighlight.style.left = (bounds.x1 * widthScale) + 'px';
-        this.activeHighlight.style.top = (bounds.y1 * heightScale) + 'px';
-        this.activeHighlight.style.width = ((bounds.x2 - bounds.x1) * widthScale) + 'px';
-        this.activeHighlight.style.height = ((bounds.y2 - bounds.y1) * heightScale) + 'px';
-        
-        // Adjust border radius based on direction
-        if (direction === 'UP') {
-            this.activeHighlight.style.borderRadius = '8px 8px 0 0';
-        } else if (direction === 'LEFT') {
-            this.activeHighlight.style.borderRadius = '0 0 0 8px';
-        } else if (direction === 'DOWN') {
-            this.activeHighlight.style.borderRadius = '0';
-        } else if (direction === 'RIGHT') {
-            this.activeHighlight.style.borderRadius = '0 0 8px 0';
-        }
-    }
-    
-    hideActiveHighlight() {
-        this.activeHighlight.style.display = 'none';
     }
     
     pressDirection(direction) {
@@ -327,6 +212,10 @@ export class MobileGamepad {
         if (!this.activeKeys.has(key)) {
             this.activeKeys.add(key);
             this.simulateKeyEvent('keydown', key, keyCode);
+            
+            // Visual feedback
+            const zone = document.querySelector(`.${direction.toLowerCase()}-zone`);
+            if (zone) zone.classList.add('active');
         }
     }
     
@@ -337,6 +226,10 @@ export class MobileGamepad {
         if (this.activeKeys.has(key)) {
             this.activeKeys.delete(key);
             this.simulateKeyEvent('keyup', key, keyCode);
+            
+            // Remove visual feedback
+            const zone = document.querySelector(`.${direction.toLowerCase()}-zone`);
+            if (zone) zone.classList.remove('active');
         }
     }
     
@@ -345,12 +238,12 @@ export class MobileGamepad {
             this.releaseDirection(dir);
         });
         this.activeDirection = null;
-        this.hideActiveHighlight();
+        this.dpadZones.forEach(zone => zone.classList.remove('active'));
     }
     
     pressFire() {
-        const key = 'l';
-        const keyCode = 76;
+        const key = 'l'; // Your fire key is 'l'
+        const keyCode = 76; // L key
         
         if (!this.activeKeys.has(key)) {
             this.activeKeys.add(key);
@@ -372,6 +265,7 @@ export class MobileGamepad {
         const key = 'p';
         const keyCode = 80;
         
+        // Pause is a single press, not held
         this.simulateKeyEvent('keydown', key, keyCode);
         setTimeout(() => {
             this.simulateKeyEvent('keyup', key, keyCode);
@@ -399,6 +293,7 @@ export class MobileGamepad {
     }
     
     simulateKeyEvent(type, key, keyCode) {
+        // Create a proper keyboard event
         const event = new KeyboardEvent(type, {
             key: key,
             code: this.getKeyCode(key),
@@ -408,7 +303,11 @@ export class MobileGamepad {
             cancelable: true
         });
         
+        // Dispatch the event to the window (same as real keyboard)
         window.dispatchEvent(event);
+        
+        // Debug log (optional)
+        // console.log(`MobileGamepad: ${type} ${key} (${keyCode})`);
     }
     
     getKeyCode(key) {
@@ -423,17 +322,21 @@ export class MobileGamepad {
         return map[key] || '';
     }
     
+    // Clean up all pressed keys (useful when game loses focus)
     releaseAllKeys() {
         this.releaseAllDirections();
         
+        // Release fire key if pressed
         if (this.activeKeys.has('l')) {
             this.releaseFire();
         }
         
+        // Update button visuals
         this.fireBtn.classList.remove('active');
         this.pauseBtn.classList.remove('active');
     }
     
+    // Optional: Call this when game is paused or loses focus
     reset() {
         this.releaseAllKeys();
         this.touchId = null;
@@ -441,3 +344,47 @@ export class MobileGamepad {
     }
 }
 
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Only create gamepad on mobile devices
+    if (window.innerWidth <= 768) {
+        window.mobileGamepad = new MobileGamepad();
+        
+        // Optional: Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth <= 768 && !window.mobileGamepad) {
+                window.mobileGamepad = new MobileGamepad();
+            }
+        });
+        
+        // Release all keys when window loses focus
+        window.addEventListener('blur', () => {
+            if (window.mobileGamepad) {
+                window.mobileGamepad.releaseAllKeys();
+            }
+        });
+        
+        // Also release on visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && window.mobileGamepad) {
+                window.mobileGamepad.releaseAllKeys();
+            }
+        });
+    }
+});
+
+// Optional: Global function to initialize gamepad from your game code
+function initMobileGamepad() {
+    if (window.innerWidth <= 768 && !window.mobileGamepad) {
+        window.mobileGamepad = new MobileGamepad();
+        return true;
+    }
+    return false;
+}
+
+// Optional: Global function to reset gamepad
+function resetMobileGamepad() {
+    if (window.mobileGamepad) {
+        window.mobileGamepad.reset();
+    }
+}
