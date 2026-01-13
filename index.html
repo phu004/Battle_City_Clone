@@ -10,17 +10,71 @@
 
 <body>
     <div class="container">
-        <div class="game-header">
-            <h1>BATTLE CITY</h1>
-        </div>
-
         <div class="main-content">
-            <div class="game-container" id="gameContainer">
-                <canvas id="gameCanvas"></canvas>
+            <div class="game-area">
+                <div class="game-container" id="gameContainer">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+
+                <!-- Zoom controls on the right -->
+                <div class="right-controls">
+
+
+                    <div class="zoom-buttons">
+                        <button id="newGameBtn" class="zoom-btn">New</button>
+                        <button id="pauseBtn" class="zoom-btn">Pause</button>
+                        <button id="toggleBoundingBox" class="zoom-btn">Debug</button>
+                    </div>
+
+                </div>
             </div>
 
-            <div class="bottom-panel">
-                <div class="info-panel" >
+            <!-- Replace the entire mobile-gamepad div with this simplified version -->
+            <div class="mobile-gamepad" id="mobileGamepad">
+                <div class="gamepad-container">
+                    <!-- Left side: Movement D-Pad -->
+                    <div class="movement-area">
+                        <div class="dpad-grid">
+                            <div class="dpad-row">
+                                <button class="dpad-btn" data-direction="UP">
+                                    <span class="arrow">↑</span>
+                                </button>
+                            </div>
+                            <div class="dpad-row">
+                                <button class="dpad-btn" data-direction="LEFT">
+                                    <span class="arrow">←</span>
+                                </button>
+                                <div class="dpad-center"></div>
+                                <button class="dpad-btn" data-direction="RIGHT">
+                                    <span class="arrow">→</span>
+                                </button>
+                            </div>
+                            <div class="dpad-row">
+                                <button class="dpad-btn" data-direction="DOWN">
+                                    <span class="arrow">↓</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right side: Fire Button -->
+                    <div class="action-area">
+                        <button class="fire-btn" data-button="FIRE">
+                            <span>FIRE</span>
+                        </button>
+                    </div>
+
+                    <!-- Bottom center: Pause Button -->
+                    <div class="pause-area">
+                        <button class="pause-btn" id="mobilePauseBtn">
+                            <span>PAUSE</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-panel" style="display: none">
+                <div class="info-panel" style="display: none">
                     <div class="stats" style="display: none">
                         <div class="stat-item">
                             <span class="stat-label">Player Lives:</span>
@@ -188,29 +242,23 @@
                         </div>
                     </div>
 
-                    <div class="zoom-controls">
-                        <div class="zoom-buttons">
-                            <button id="zoom1x" class="zoom-btn">1× (208×208)</button>
-                            <button id="zoom2x" class="zoom-btn">2× (416×416)</button>
-                            <button id="zoom3x" class="zoom-btn active">3× (624×624)</button>
-                        </div>
-                    </div>
+                    <!-- Removed zoom controls from here -->
 
-                    <div class="controls">
+                    <div class="controls" style="display: none">
                         <button id="newGameBtn">New Game</button>
                         <button id="pauseBtn">Pause</button>
                         <button id="aiToggle" class="ai-button" style="display: none;">Enable AI</button>
-                        <button id="toggleBoundingBox" class="ai-button">Show Bounding Box</button>
-                        <button id="togglePrediction" class="ai-button">Show Predictions</button>
+                        <button id="toggleBoundingBox" class="ai-button">Show Debug</button>
+
                     </div>
 
-                    <div class="instructions">
+                    <div class="instructions" style="display: none">
                         <p><span class="status-indicator" id="aiStatusIndicator"></span>
                             <span id="aiStatusText">AI: Ready to enable</span>
                         </p>
                     </div>
 
-                    <div class="ai-debug" id="aiDebug">
+                    <div class="ai-debug" id="aiDebug" style="display: none">
                         AI Debug: Waiting for activation...
                     </div>
                 </div>

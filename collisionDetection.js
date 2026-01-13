@@ -128,7 +128,7 @@ export function checkTankVisualCollision(tankVisualX, tankVisualY, targetPhysica
         tankVisualY + 2 > targetPhysicalY);
 }
 
-// Check if a position collides with a river (for tank movement)
+// Check if a position collides with a river and steelwalls (for tank movement)
 export function wouldCollideWithRiver(visualX, visualY, rivers) {
     for (const river of rivers) {
         if (checkTankVisualCollision(visualX, visualY, river.x, river.y, 1, 1)) {
@@ -136,4 +136,65 @@ export function wouldCollideWithRiver(visualX, visualY, rivers) {
         }
     }
     return false;
+}
+
+export function wouldCollideWithSteelWalls(visualX, visualY, steelWalls) {
+    for (const steelWall of steelWalls) {
+        if(!steelWall.isAlive)
+            continue;
+        if (checkTankVisualCollision(visualX, visualY, steelWall.x, steelWall.y, 1, 1)) {
+            return true; // Tank collides with steelWall
+        }
+    }
+    return false;
+}
+
+export function countCollisionWithRiver(visualX, visualY, rivers) {
+    let count = 0
+    for (const river of rivers) {
+        if (checkTankVisualCollision(visualX, visualY, river.x, river.y, 1, 1)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+export function countCollisionWithSteelWalls(visualX, visualY, steelWalls) {
+    let count = 0
+    for (const steelWall of steelWalls) {
+        if(!steelWall.isAlive)
+            continue;
+        if (checkTankVisualCollision(visualX, visualY, steelWall.x, steelWall.y, 1, 1)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+
+function checkPowerUpCollision(tank, powerUp) {
+    if (!powerUp || !powerUp.isAlive || !tank || !tank.isAlive) return false;
+    
+    // Check if tank's bounding box overlaps with power-up's bounding box
+    return checkPhysicalCollision(
+        tank.x, tank.y, 2, 2,
+        powerUp.x, powerUp.y, powerUp.width, powerUp.height
+    );
+}
+
+// Check for power-up collisions with all tanks
+export function checkAllPowerUpCollisions(powerUp, AITank, humanTank, particleEffects, enemyTanks, frozeTime, brickWalls, steelWalls) {
+    if (!powerUp || !powerUp.isAlive) return;
+    
+    // Check AI tank
+    if (AITank.isAlive && checkPowerUpCollision(AITank, powerUp)) {
+        // The effect is handled inside the consumed() method
+        powerUp.consumed(AITank, particleEffects, enemyTanks, frozeTime, brickWalls, steelWalls);
+    }
+    
+    // Check human tank
+    if (humanTank.isAlive && checkPowerUpCollision(humanTank, powerUp)) {
+        // The effect is handled inside the consumed() method
+        powerUp.consumed(humanTank, particleEffects, enemyTanks, frozeTime, brickWalls, steelWalls);
+    }
 }

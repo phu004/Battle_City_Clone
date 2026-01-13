@@ -1,9 +1,12 @@
 import { drawBackground, drawBrickWalls, drawSteelWalls, drawFuturePosition, drawPredictionLineOfSight, drawPerpendicularBulletWarnings, drawBushes, drawTank, drawBullets, drawBase, drawRivers, loadEntitySprites } from './renderer.js';
-import { updatePlayerDisplay, updateCanvasSize, updateEnemyDisplay, updateWallCount, updateAIDisplay, updateAIDisplayInfo } from './gameUI.js';
+import { updatePlayerDisplay, updateCanvasSize, updateEnemyDisplay, updateWallCount, updateAIDisplayInfo } from './gameUI.js';
 import { initializeMap } from './mapLoader.js';
-import { checkBulletBrickCollisionPrecise, checkPhysicalCollision, checkBulletSteelCollision, checkTankVisualCollision, wouldCollideWithRiver } from './collisionDetection.js';
+import { checkBulletBrickCollisionPrecise, checkPhysicalCollision, checkBulletSteelCollision, checkTankVisualCollision, wouldCollideWithRiver, checkAllPowerUpCollisions, wouldCollideWithSteelWalls, countCollisionWithRiver, countCollisionWithSteelWalls } from './collisionDetection.js';
 import { createBulletExplosion, updateParticleEffects, drawParticleEffects, loadParticleSprites, createBigExplosion, createSpawnAnimation } from './particles.js';
 import { isBulletPerpendicularToMovement, checkPerpendicularPathIntersection, willPathIntersectBullet, willWalkIntoPerpendicularBullet, isNextToEnemy, getShootingDirectionForAdjacentEnemy } from './mapAwareness.js';
+import { PowerUp } from './PowerUp.js';
+import { initializeSound } from './soundLoader.js';
+
 
 // ========== GAME CONSTANTS ==========
 const GRID_SIZE = 26;
@@ -20,10 +23,8 @@ const FAST_BULLET_COOLDOWN = 4; // NEW: For power level 2+
 const BULLET_OFFSET = 0.55; // How far from tank edge bullets spawn
 const MAX_BULLET = 2;
 
-const AI_LIVES = 3;
-const HUMAN_LIVES = 3;
-const MAX_ENEMIES = 4;
-const ENEMY_SPAWN_COOLDOWN = 250;
+const MAX_ENEMIES = 6;
+const ENEMY_SPAWN_COOLDOWN = 200;
 const INVULNERABLE_COUNTDOWN = 200;
 
 // AI Constants - Enhanced for bullet avoidance
@@ -32,8 +33,8 @@ const AI_SHOOT_DISTANCE = 8;
 const AI_AVOID_DISTANCE = 4;
 const AI_BULLET_DESTROY_DISTANCE = 3;
 const AI_PATHFINDING_DEPTH = 15;
-const AI_SHOOT_COOLDOWN = 10;
-const AI_ALIGNMENT_TOLERANCE = 0.1;
+const AI_SHOOT_COOLDOWN = 4;
+const AI_ALIGNMENT_TOLERANCE = 0.5;
 const AI_BULLET_PREDICTION_FRAMES = 30; // Predict bullets 30 frames ahead
 const AI_BULLET_COLLISION_THRESHOLD = 1; // Cells away considered collision
 const AI_MIN_TTC = 15; // Minimum time-to-collision to consider safe
@@ -54,11 +55,11 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const ZOOM_LEVELS = [1, 2, 3];
 
-let zoomLevel = 3;
+const powerUp = new PowerUp();
+const frozeTime = { time: 0 };
 
+let zoomLevel = 3;
 let frameCount = 0;
-let AILives = AI_LIVES;
-let humanLives = HUMAN_LIVES;
 let enemySpawnCooldown = 120;
 let gamePaused = false;
 let showBoundingBox = false;
@@ -129,7 +130,7 @@ let AITank = {
     x: 16, y: 24, direction: 0,
     bx: 16, by: 24,
     moving: false,
-    powerLevel: 3, // NEW: Power level (1-5)
+    powerLevel: 1, // NEW: Power level (1-5)
     isAlive: false,
     respawnTimer: 52, canCollide: true,
     canShoot: true,
@@ -138,7 +139,8 @@ let AITank = {
     playerType: 'ai',
     bulletCooldown: 0,
     firingDirection: null,
-    invulnerableTimer: INVULNERABLE_COUNTDOWN
+    invulnerableTimer: INVULNERABLE_COUNTDOWN,
+    lives: 3
 
 };
 
@@ -147,7 +149,7 @@ let humanTank = {
     x: 8, y: 24, direction: 0,
     bx: 8, by: 24,
     moving: false,
-    powerLevel: 3, // NEW: Power level (1-5)
+    powerLevel: 5, // NEW: Power level (1-5)
     isAlive: false,
     respawnTimer: 52, canCollide: true,
     canShoot: true,
@@ -156,7 +158,8 @@ let humanTank = {
     playerType: 'human',
     bulletCooldown: 0,
     firingDirection: null,
-    invulnerableTimer: INVULNERABLE_COUNTDOWN
+    invulnerableTimer: INVULNERABLE_COUNTDOWN,
+    lives: 3
 };
 
 // Enemy tanks
@@ -187,6 +190,11 @@ let base = {
 };
 
 let gameOver = false;
+let useSimplePathfindingCountdown = 30;
+let seekPowerUpDirectionChangeCountDown = 0;
+
+//sound
+let sound = [];
 
 // ========== POWER LEVEL FUNCTIONS ==========
 
@@ -242,19 +250,19 @@ function canShootAdjacentEnemy(enemy) {
     if (shootDir === null) return false;
 
     // Check line of sight (simplified for adjacent enemies)
-    const dx = Math.abs(AITank.x - enemy.x);
-    const dy = Math.abs(AITank.y - enemy.y);
+    const dx = Math.abs(AITank.bx - enemy.x);
+    const dy = Math.abs(AITank.by - enemy.y);
 
     // For adjacent enemies, we have line of sight if:
     // 1. We're aligned on X or Y axis within tolerance
     // 2. No walls between us (ignore rivers)
-    const isAlignedX = dy < AI_ALIGNMENT_TOLERANCE;
-    const isAlignedY = dx < AI_ALIGNMENT_TOLERANCE;
+    const isAlignedX = dy <= 1;
+    const isAlignedY = dx <= 1;
 
     if (!isAlignedX && !isAlignedY) return false;
 
-    // Check for walls (brick and steel) but ignore rivers
-    return !checkObstacleBetween(AITank.x, AITank.y, enemy.x, enemy.y);
+       // Check for walls (brick and steel) but ignore rivers
+    return !checkObstacleBetween(AITank.bx, AITank.by, enemy.x, enemy.y);
 }
 
 // ========== PREDICTIVE SHOOTING FUNCTIONS ==========
@@ -897,6 +905,9 @@ function checkObstacleBetween(x1, y1, x2, y2) {
     y1 += TANK_SIZE / 2;
     x2 += TANK_SIZE / 2;
     y2 += TANK_SIZE / 2;
+    if(Math.abs(x2 - x1) <= 2 && Math.abs(y2 - y1) <= 2)
+        return false;
+
     const steps = 20;
     const dx = (x2 - x1) / steps;
     const dy = (y2 - y1) / steps;
@@ -908,7 +919,7 @@ function checkObstacleBetween(x1, y1, x2, y2) {
         // Check brick walls
         for (const wall of brickWalls) {
             if (wall.isAlive()) {
-                if (checkPhysicalCollision(checkX, checkY, 0.1, 0.1, wall.x, wall.y, 1, 1)) {
+                if (checkPhysicalCollision(checkX-0.5, checkY-0.5, 1, 1, wall.x, wall.y, 1, 1)) {
                     return true;
                 }
             }
@@ -917,7 +928,7 @@ function checkObstacleBetween(x1, y1, x2, y2) {
         // Check steel walls
         for (const steel of steelWalls) {
             if (steel.isAlive) {
-                if (checkPhysicalCollision(checkX, checkY, 0.1, 0.1, steel.x, steel.y, 1, 1)) {
+                if (checkPhysicalCollision(checkX-0.5, checkY-0.5, 1, 1, steel.x, steel.y, 1, 1)) {
                     return true;
                 }
             }
@@ -1049,7 +1060,6 @@ function spawnEnemy() {
         decisionTimer: Math.floor(Math.random() * 50) + 30,
         fireTimer: Math.floor(Math.random() * 100) + 50,
         isAlive: true, canCollide: true,
-        spawnProtection: 30,
         lastDirectionChange: 0,
         spawnPositionName: position.name,
         needsAlignment: false,
@@ -1073,6 +1083,7 @@ function respawnPlayer(isAI) {
         AITank.y = 24;
         AITank.bx = 16;
         AITank.by = 24;
+
         AITank.direction = 0;
         AITank.isAlive = true;
         AITank.canShoot = true;
@@ -1082,14 +1093,14 @@ function respawnPlayer(isAI) {
         AITank.invulnerableTimer = INVULNERABLE_COUNTDOWN;
 
 
-        if (AILives <= 0) {
+        if (AITank.lives <= 0) {
             // AI 游戏结束
             AITank.isAlive = false;
             AITank.canShoot = false;
             AITank.moving = false;
 
             // 检查人类玩家是否也死亡
-            if (!humanTank.isAlive && humanLives <= 0) {
+            if (!humanTank.isAlive && humanTank.lives <= 0) {
                 gameOver = true;
                 document.getElementById('aiDebug').textContent = "GAME OVER: All players lost!";
             } else {
@@ -1113,14 +1124,14 @@ function respawnPlayer(isAI) {
         humanTank.invulnerableTimer = INVULNERABLE_COUNTDOWN;
 
 
-        if (humanLives <= 0) {
+        if (humanTank.lives <= 0) {
             // 人类玩家游戏结束
             humanTank.isAlive = false;
             humanTank.canShoot = false;
             humanTank.moving = false;
 
             // 检查AI玩家是否也死亡
-            if (!AITank.isAlive && AILives <= 0) {
+            if (!AITank.isAlive && AITank.lives <= 0) {
                 gameOver = true;
                 document.getElementById('aiDebug').textContent = "GAME OVER: All players lost!";
             } else {
@@ -1139,7 +1150,7 @@ function callUpdatePlayerDisplay() {
         moveBlockedByBullet,
         perpendicularBulletRisk,
         nextToEnemy,
-        AILives,
+        AITank.lives,
         AITank,
         aiShootCooldown,
         enemyFacingPlayer,
@@ -1304,7 +1315,6 @@ function findFirstBrickAlongPath(path, startX, startY) {
             }
         }
     }
-
     return null;
 }
 
@@ -1338,16 +1348,18 @@ function getShootingDirectionForBrick(brickTarget) {
 function hasLineOfSightToBrick(brickTarget) {
     if (!brickTarget || !brickTarget.brick) return false;
 
+
     const brick = brickTarget.brick;
 
     // Check if we're aligned with the brick
     const dx = Math.abs(AITank.x - brick.x);
     const dy = Math.abs(AITank.y - brick.y);
 
-    const isHorizontallyAligned = dy < AI_ALIGNMENT_TOLERANCE;
-    const isVerticallyAligned = dx < AI_ALIGNMENT_TOLERANCE;
+    const isHorizontallyAligned = dy <= 1;
+    const isVerticallyAligned = dx <= 1;
 
     if (!isHorizontallyAligned && !isVerticallyAligned) return false;
+
 
     // Check for obstacles (steel walls) but ignore other brick walls
     return !checkObstacleBetweenForBrickShooting(AITank.x, AITank.y, brick.x, brick.y);
@@ -1648,6 +1660,7 @@ function hasLineOfSightToEnemy(enemy) {
 
     if (!isInLineOfSight) return false;
 
+
     // Check for walls but ignore rivers
     return !checkObstacleBetween(AITank.x, AITank.y, enemy.x, enemy.y);
 }
@@ -1772,6 +1785,7 @@ function checkBulletPathHitsBase(startX, startY, direction) {
 
 // ========== ENHANCED AI DECISION MAKING ==========
 function updateAI() {
+     
     // ========== 新增：检查游戏是否结束 ==========
     if (!base.isAlive || gameOver) {
         aiEnabled = false;
@@ -1781,42 +1795,461 @@ function updateAI() {
 
     if (!aiEnabled || !AITank.isAlive) return;
 
-    // ========== QUICK FIX: Check for adjacent enemies first ==========
-    const adjacentEnemy = enemyTanks.find(enemy =>
-        enemy.isAlive &&
-        Math.abs(enemy.x - AITank.x) <= 2.5 &&
-        Math.abs(enemy.y - AITank.y) <= 2.5
-    );
-    if (adjacentEnemy) {
-        // Simple logic: face the enemy and shoot
-        const dx = adjacentEnemy.x - AITank.x;
-        const dy = adjacentEnemy.y - AITank.y;
+    // ========== 重置AI状态 ==========
+    resetAIState();
 
-        let shootDir;
-        if (Math.abs(dx) > Math.abs(dy)) {
-            shootDir = dx > 0 ? 1 : 3;
-        } else {
-            shootDir = dy > 0 ? 2 : 0;
-        }
 
-        if (AITank.direction !== shootDir) {
-            changeTankDirection(AITank, shootDir);
-        }
+    // ========== 清除按键输入 ==========
+    clearMovementKeys();
 
-        const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
-        if (AITank.canShoot && bulletCooldown === 0 &&
-            bullets.filter(b => b.isAITank).length < maxBullets && !wouldBulletHitBase(AITank.x, AITank.y, shootDir)) {
-            firePlayerBullet('ai');
-            aiShootCooldown = AI_SHOOT_COOLDOWN;
-            aiShotDirection = shootDir;
-            aiAction = "Adjacent Shot!";
-            aiStrategy = "Close Combat";
-        }
+    // ========== 处理射击冷却 ==========
+    handleShootingCooldown();
 
-        return; // Skip the rest of AI logic for this frame
+    // ========== 检查是否需要保持射击方向 ==========
+    if (shouldMaintainShootingDirection()) {
+        maintainShootingDirection();
+        updateAIDisplay();
+        return;
     }
 
-    // Reset prediction state
+    // ========== 评估子弹风险 ==========
+    evaluateBulletRisks();
+
+
+    // ========== 处理近战情况 ==========
+    if (handleCloseCombat()) {
+        updateAIDisplay();
+        return;
+    }
+
+    // ========== 处理子弹安全（最高优先级） ==========
+    if (handleBulletSafety()) {
+        updateAIDisplay();
+        return;
+    }
+
+    
+    if (useSimplePathfindingCountdown > 0)
+        useSimplePathfindingCountdown--;
+    if (seekPowerUpDirectionChangeCountDown > 0)
+        seekPowerUpDirectionChangeCountDown --;
+
+    let needToGrabPowerUp = false;
+    if (powerUp.isAlive) {
+        let count = countCollisionWithRiver(powerUp.x, powerUp.y, rivers) + countCollisionWithSteelWalls(powerUp.x, powerUp.y, steelWalls);
+        let noNeedThisPowerUp = false;
+        if ((powerUp.type == "star" || powerUp.type == "gun") && AITank.powerLevel == 5)
+            noNeedThisPowerUp = true;
+        else if (powerUp.type == "star" && AITank.powerLevel == 4)
+            noNeedThisPowerUp = true;
+        else if(powerUp.type == "extraLife" && AITank.lives > humanTank.lives)
+            noNeedThisPowerUp = true;
+        else if( (powerUp.type == "bomb" || powerUp.type == "shovel" || powerUp.type == "helmet")  && frozeTime.time > 60)
+            noNeedThisPowerUp = true;
+        else if (isAITankCloseToAnyEnemy())
+            noNeedThisPowerUp = true;
+
+        needToGrabPowerUp = count < 4 && !noNeedThisPowerUp;
+    }
+
+    // ========== 处理路径被砖块阻挡的情况 ==========
+    if (aiPathBlockedByBrick && aiBrickTarget) {
+        if (!needToGrabPowerUp) {
+            handleBrickBlockedPath();
+            updateAIDisplay();
+            
+        } else {
+            const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
+            if (bulletCooldown === 0 &&
+                bullets.filter(b => b.isAITank).length < maxBullets) {
+                firePlayerBullet('ai');
+                aiShooting = true;
+            }
+        }
+    }
+    if (needToGrabPowerUp) {
+        // ========== TEST: Move to imaginary 2x2 block at (12, 12) ==========
+        const TARGET_BLOCK = {
+            x: powerUp.x,
+            y: powerUp.y,
+            width: 2,
+            height: 2
+        };
+
+        // Check if agent tank is already at the target (visual collision)
+        const isAtTarget = checkTankVisualCollision(
+            AITank.x, AITank.y,
+            TARGET_BLOCK.x, TARGET_BLOCK.y,
+            TANK_SIZE, TANK_SIZE
+        );
+
+        if (!isAtTarget) {
+
+            // Find path to target block
+            // We want to go to the edge of the block, not inside it
+            // Since tank is 2×2 and block is 2×2, we want to position the tank
+            // so its top-left corner is aligned with the block's top-left corner
+
+            // Calculate center of target block for pathfinding
+            const targetCenterX = TARGET_BLOCK.x + TARGET_BLOCK.width / 2 - TANK_SIZE / 2;
+            const targetCenterY = TARGET_BLOCK.y + TARGET_BLOCK.height / 2 - TANK_SIZE / 2;
+
+            // Calculate distance to target
+            const dx = TARGET_BLOCK.x - AITank.x;
+            const dy = TARGET_BLOCK.y - AITank.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // ========== NEW: Simple method when close (within 3 cells) ==========
+            if (distance <= 3 || useSimplePathfindingCountdown > 0) {
+
+                if (useSimplePathfindingCountdown == 0)
+                    useSimplePathfindingCountdown = 30;
+                aiStrategy = "Simple Close Approach";
+                
+
+                const targetX = TARGET_BLOCK.x; // Aim for 11
+                const targetY = TARGET_BLOCK.y; // Aim for 11
+
+                const closeDx = targetX - AITank.x;
+                const closeDy = targetY - AITank.y;
+
+                // Determine which direction to move
+                let moveDirection = AITank.direction;
+
+                // ========== NEW: Check for brick walls in current path ==========
+                const wouldHitBrick = checkIfBrickInPath(AITank.x, AITank.y, moveDirection);
+
+                if (wouldHitBrick) {
+                    // There's a brick wall in our way - SHOOT IT!
+                    aiStrategy = "Clearing Brick Blockage";
+
+                    // Check if we can shoot
+                    const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
+                    if (AITank.canShoot && bulletCooldown === 0 &&
+                        bullets.filter(b => b.isAITank).length < maxBullets) {
+
+                        firePlayerBullet('ai');
+                        aiShooting = true;
+                        aiShootCooldown = AI_SHOOT_COOLDOWN;
+                        aiShotDirection = moveDirection;
+                        aiAction = "Shooting blocking brick!";
+
+                        // Don't move while shooting
+                        keys['w'] = keys['a'] = keys['s'] = keys['d'] = false;
+                        return;
+                    } else {
+                        // Can't shoot yet, just wait
+                        aiAction = "Waiting to shoot brick";
+                        keys['w'] = keys['a'] = keys['s'] = keys['d'] = false;
+                        return;
+                    }
+                }
+
+
+                let futureX = AITank.bx;
+                let futureY = AITank.by;
+
+                let shouldMoveUp = false;
+                for (let i = 1; i < 3; i++) {
+                    futureY -= 1;
+                    if (wouldCollideWithRiver(futureX, futureY, rivers) || wouldCollideWithSteelWalls(futureX, futureY, steelWalls)) {
+                        shouldMoveUp = false;
+                        break;
+                    }
+                    shouldMoveUp = checkTankVisualCollision(futureX, futureY, TARGET_BLOCK.x, TARGET_BLOCK.y, TANK_SIZE, TANK_SIZE)
+                    if (shouldMoveUp)
+                        break;
+                }
+                if (shouldMoveUp)
+                    moveDirection = 0;
+
+                futureX = AITank.bx;
+                futureY = AITank.by;
+                let shouldMoveRight = false;
+                for (let i = 1; i < 3; i++) {
+                    futureX += 1;
+                    if (wouldCollideWithRiver(futureX, futureY, rivers) || wouldCollideWithSteelWalls(futureX, futureY, steelWalls)) {
+                        shouldMoveRight = false;
+                        break;
+                    }
+                    shouldMoveRight = checkTankVisualCollision(futureX, futureY, TARGET_BLOCK.x, TARGET_BLOCK.y, TANK_SIZE, TANK_SIZE)
+                    if (shouldMoveRight)
+                        break;
+                }
+                if (shouldMoveRight)
+                    moveDirection = 1;
+
+                futureX = AITank.bx;
+                futureY = AITank.by;
+                let shouldMoveDown = false;
+                for (let i = 1; i < 3; i++) {
+                    futureY += 1;
+                    if (wouldCollideWithRiver(futureX, futureY, rivers) || wouldCollideWithSteelWalls(futureX, futureY, steelWalls)) {
+                        shouldMoveDown = false;
+                        break;
+                    }
+                    shouldMoveDown = checkTankVisualCollision(futureX, futureY, TARGET_BLOCK.x, TARGET_BLOCK.y, TANK_SIZE, TANK_SIZE)
+                    if (shouldMoveDown)
+                        break;
+                }
+                if (shouldMoveDown)
+                    moveDirection = 2;
+
+                futureX = AITank.bx;
+                futureY = AITank.by;
+                let shouldMoveLeft = false;
+                for (let i = 1; i < 3; i++) {
+                    futureX -= 1;
+                    if (wouldCollideWithRiver(futureX, futureY, rivers) || wouldCollideWithSteelWalls(futureX, futureY, steelWalls)) {
+                        shouldMoveLeft = false;
+                        break;
+                    }
+                    shouldMoveLeft = checkTankVisualCollision(futureX, futureY, TARGET_BLOCK.x, TARGET_BLOCK.y, TANK_SIZE, TANK_SIZE)
+                    if (shouldMoveLeft)
+                        break;
+                }
+                if (shouldMoveLeft)
+                    moveDirection = 3;
+
+                futureX = AITank.x;
+                futureY = AITank.y;
+                if (!(shouldMoveUp || shouldMoveRight || shouldMoveDown || shouldMoveLeft) && seekPowerUpDirectionChangeCountDown == 0) {
+                    // If we need to change direction, let alignment handle the positioning
+                    let canMoveHorizontally = true;
+
+                    if (Math.abs(closeDx) > 0.5) {
+                        // Need to move horizontally
+                        if (closeDx > 0) {
+                            moveDirection = 1; // Right
+                            canMoveHorizontally = !(wouldCollideWithRiver(futureX + 0.1, futureY, rivers) || wouldCollideWithSteelWalls(futureX + 0.1, futureY, steelWalls))
+                        } else {
+                            moveDirection = 3; // Left
+                            canMoveHorizontally = !(wouldCollideWithRiver(futureX - 0.1, futureY, rivers) || wouldCollideWithSteelWalls(futureX - 0.1, futureY, steelWalls))
+                        }
+                    }
+
+                    let canMoveVertically = false;
+
+                    if (Math.abs(closeDy) > 0.5) {
+                        // Need to move vertically
+                        if (closeDy > 0) {
+                            if (!canMoveHorizontally)
+                                moveDirection = 2; // Down
+                            canMoveVertically = !(wouldCollideWithRiver(futureX, futureY + 0.1, rivers) || wouldCollideWithSteelWalls(futureX, futureY + 0.1, steelWalls))
+                        } else {
+                            if (!canMoveHorizontally)
+                                moveDirection = 0; // Up
+                            canMoveVertically = !(wouldCollideWithRiver(futureX, futureY - 0.1, rivers) || wouldCollideWithSteelWalls(futureX, futureY - 0.1, steelWalls))
+
+                        }
+                    }
+
+
+                    if ((!canMoveHorizontally || !canMoveVertically) && !(canMoveHorizontally && canMoveVertically) && (closeDx == 0 || closeDy == 0)) {
+                        useSimplePathfindingCountdown = 0;
+                    }
+
+                    if (moveDirection !== AITank.direction)
+                        seekPowerUpDirectionChangeCountDown = 30;
+                }
+
+                // ========== NEW: Check for brick walls in new direction BEFORE changing ==========
+                const wouldHitBrickNewDir = checkIfBrickInPath(AITank.x, AITank.y, moveDirection);
+                if (wouldHitBrickNewDir && moveDirection !== AITank.direction) {
+                    // There's a brick in the new direction - face it and shoot!
+                    aiStrategy = "Preparing to clear brick";
+
+                    // Change direction to face the brick
+                    console.log(`Brick detected! Facing ${['Up', 'Right', 'Down', 'Left'][moveDirection]}`);
+                    changeTankDirection(AITank, moveDirection);
+
+                    // Check if we can shoot immediately
+                    const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
+                    if (AITank.canShoot && bulletCooldown === 0 &&
+                        bullets.filter(b => b.isAITank).length < maxBullets) {
+
+                        firePlayerBullet('ai');
+                        aiShooting = true;
+                        aiShootCooldown = AI_SHOOT_COOLDOWN;
+                        aiShotDirection = moveDirection;
+                        aiAction = "Shooting blocking brick!";
+                    } else {
+                        aiAction = "Facing brick, waiting to shoot";
+                    }
+
+                    // Don't move into the brick
+                    keys['w'] = keys['a'] = keys['s'] = keys['d'] = false;
+                    return;
+                }
+
+
+
+                // If changing direction, the alignment will snap to grid
+                if (moveDirection !== AITank.direction) {
+                    changeTankDirection(AITank, moveDirection);
+                    // After direction change, tank will align to grid on next frame
+                    // This will put us at integer coordinates
+                }
+
+                // Move in the chosen direction
+                keys[['w', 'd', 's', 'a'][moveDirection]] = true;
+                aiAction = `Simple approach: Moving ${['Up', 'Right', 'Down', 'Left'][moveDirection]}`;
+
+                // Check if we've reached a good position
+                // We're at a good position if our rounded coordinates are within 1 cell of target
+                const roundedX = Math.round(AITank.x);
+                const roundedY = Math.round(AITank.y);
+
+                if (Math.abs(roundedX - targetX) <= 1 && Math.abs(roundedY - targetY) <= 1) {
+                    // Close enough - the intersection will happen
+                    aiAction = "In position for pickup";
+
+                    // Optional: Stop moving if we're exactly at the target coordinates
+                    if (roundedX === targetX && roundedY === targetY) {
+                        keys['w'] = keys['a'] = keys['s'] = keys['d'] = false;
+                        aiAction = "Ready for pickup!";
+                    }
+                }
+            }
+            // ========== Original pathfinding for longer distances ==========
+            if (useSimplePathfindingCountdown == 0) {
+                aiCurrentPath = findPathToTarget(targetCenterX, targetCenterY);
+                
+                aiStrategy = "Moving to Test Block";
+
+                if (aiCurrentPath.length > 0) {
+                    const moveDir = getMoveDirectionFromPath(aiCurrentPath);
+
+                    if (moveDir !== null && moveDir !== AITank.direction) {
+                        if (!AITank.needsAlignment) {
+                            changeTankDirection(AITank, moveDir);
+                            aiMoveCooldown = 10;
+                        }
+                    }
+
+                    if(!keys[['w', 'd', 's', 'a'][AITank.direction]]){
+                    //    console.log(seekPowerUpDirectionChangeCountDown)
+                        keys['w'] = false;
+                        keys['a'] = false;
+                        keys['s'] = false;
+                        keys['d'] = false;
+                        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+                        seekPowerUpDirectionChangeCountDown = 30;
+                    }
+
+                    
+                    aiAction = "Moving to Test Block (Pathfinding)";
+
+                    // Update path progress
+                    if (aiCurrentPath.length > 0) {
+                        const nextStep = aiCurrentPath[0];
+                        const targetX = AITank.bx + (nextStep.dx || 0);
+                        const targetY = AITank.by + (nextStep.dy || 0);
+
+                        if (Math.abs(AITank.x - targetX) < 0.5 && Math.abs(AITank.y - targetY) < 0.5) {
+                            aiCurrentPath.shift();
+                        }
+                    }
+                    
+                } else {
+                    console.log("no path found during powre up hunt")
+                    // If no path found, try to move directly toward target
+                    const directDx = targetCenterX - AITank.x;
+                    const directDy = targetCenterY - AITank.y;
+
+                    if (Math.abs(directDx) > Math.abs(directDy)) {
+                        // Move horizontally first
+                        if (directDx > 0 && AITank.direction !== 1) {
+                            changeTankDirection(AITank, 1);
+                        } else if (directDx < 0 && AITank.direction !== 3) {
+                            changeTankDirection(AITank, 3);
+                        }
+                    } else {
+                        // Move vertically first
+                        if (directDy > 0 && AITank.direction !== 2) {
+                            changeTankDirection(AITank, 2);
+                        } else if (directDy < 0 && AITank.direction !== 0) {
+                            changeTankDirection(AITank, 0);
+                        }
+                    }
+
+                    keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+                    aiAction = "Direct Move to Test Block";
+                }
+            }
+           
+            // Check if we've reached the target (using visual collision)
+            if (checkTankVisualCollision(AITank.x, AITank.y, TARGET_BLOCK.x, TARGET_BLOCK.y, TANK_SIZE, TANK_SIZE)) {
+                aiAction = "REACHED TEST BLOCK!";
+                aiStrategy = "At Target";
+                keys['w'] = keys['a'] = keys['s'] = keys['d'] = false; // Stop moving
+                console.log("SUCCESS: Tank boundary intersects with target block!");
+            }
+
+
+            return;
+        } else {
+            aiAction = "Already at Test Block";
+            aiStrategy = "At Target";
+            keys['w'] = keys['a'] = keys['s'] = keys['d'] = false; // Stop moving
+        }
+        
+    }
+
+    // ========== 正常战斗逻辑 ==========
+    if (aiShootCooldown === 0) {
+        executeCombatLogic();
+    } else {
+        maintainCurrentDirection();
+    }
+
+    
+    // ========== 对齐到网格 ==========
+    if (AITank.needsAlignment) {
+        alignTankToGrid(AITank);
+    }
+
+    updateAIDisplay();
+}
+
+// ========== 辅助函数 ==========
+
+
+// ========== NEW HELPER FUNCTION ==========
+function checkIfBrickInPath(tankX, tankY, direction) {
+    // Check one cell ahead in the given direction
+    let checkX = tankX;
+    let checkY = tankY;
+
+    switch (direction) {
+        case 0: // Up
+            checkY = Math.max(0, tankY - 1);
+            break;
+        case 1: // Right
+            checkX = Math.min(GRID_SIZE - TANK_SIZE, tankX + 1);
+            break;
+        case 2: // Down
+            checkY = Math.min(GRID_SIZE - TANK_SIZE, tankY + 1);
+            break;
+        case 3: // Left
+            checkX = Math.max(0, tankX - 1);
+            break;
+    }
+
+    // Check for brick walls at the checked position
+    for (const brick of brickWalls) {
+        if (brick.isAlive()) {
+            // Check if the tank's new position would collide with the brick
+            if (checkTankVisualCollision(checkX, checkY, brick.x, brick.y, 1, 1)) {
+                return true; // Brick is in the way!
+            }
+        }
+    }
+
+    return false; // No brick in the way
+}
+
+function resetAIState() {
     bulletTimeToCollision = Infinity;
     predictionActive = false;
     enemyFuturePosition = null;
@@ -1825,143 +2258,157 @@ function updateAI() {
     shouldPredictiveShoot = false;
     perpendicularBulletRisk = "None";
     nextToEnemy = false;
+}
 
+function clearMovementKeys() {
     keys['w'] = false;
     keys['a'] = false;
     keys['s'] = false;
     keys['d'] = false;
     keys[' '] = false;
+}
 
+function handleShootingCooldown() {
     if (aiShootCooldown > 0) {
         aiShootCooldown--;
         if (aiShotDirection !== null && AITank.direction !== aiShotDirection) {
             changeTankDirection(AITank, aiShotDirection);
         }
     }
+}
 
+function shouldMaintainShootingDirection() {
     const justChangedDirection = (frameCount - AITank.lastDirectionChangeFrame) < 3;
+    return aiShootCooldown > 0 && justChangedDirection;
+}
 
-    if (aiShootCooldown > 0 && justChangedDirection) {
-        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-        document.getElementById('aiDebug').textContent = `AI: Maintaining shooting direction (cooldown: ${aiShootCooldown})`;
-        return;
-    }
+function maintainShootingDirection() {
+    keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+    aiAction = `Maintaining shooting direction (cooldown: ${aiShootCooldown})`;
+    aiStrategy = "Maintain Direction";
+    dangerLevel = "Low";
+}
 
-    // ========== CHECK PERPENDICULAR BULLET RISK ==========
+function evaluateBulletRisks() {
+    // 检查垂直子弹风险
     const perpendicularCheck = willWalkIntoPerpendicularBullet(AITank, bullets, CELL_SIZE, PLAYER_SPEED, BULLET_SPEED, AI_BULLET_PREDICTION_FRAMES, AI_BULLET_COLLISION_THRESHOLD, PERPENDICULAR_BULLET_RISK_DISTANCE, AI_MIN_TTC, perpendicularBullets);
     if (perpendicularCheck.willIntersect) {
         perpendicularBulletRisk = perpendicularCheck.riskLevel || "Medium";
     } else {
         perpendicularBulletRisk = perpendicularBullets.length > 0 ? "Low" : "None";
     }
+}
 
-    // ========== CHECK PATH BLOCKED BY BRICK ==========
-    if (aiPathBlockedByBrick && aiBrickTarget) {
-        // We need to destroy a brick to clear our path
-        aiStrategy = "Clear Path";
+function handleBrickBlockedPath() {
+    aiStrategy = "Clear Path";
+    const brick = aiBrickTarget.brick;
+    const dx = brick.x - AITank.x;
+    const dy = brick.y - AITank.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Calculate distance to brick
-        const brick = aiBrickTarget.brick;
-        const dx = brick.x - AITank.x;
-        const dy = brick.y - AITank.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+    const shootDir = getShootingDirectionForBrick(aiBrickTarget);
+    const hasLOS = hasLineOfSightToBrick(aiBrickTarget);
 
-        // Check if we can shoot the brick
-        const shootDir = getShootingDirectionForBrick(aiBrickTarget);
-        const hasLOS = hasLineOfSightToBrick(aiBrickTarget);
-
-        // Strategy: Move closer if too far, then shoot
-        if (shootDir !== null && hasLOS) {
-            // If we're too far away (more than 3 cells), move closer first
-            if (distance > 2.5) {
-                aiAction = "Moving Closer to Brick";
-                dangerLevel = "Low";
-
-                // Move toward the brick to get in shooting range
-                const brickPath = findPathToTarget(brick.x, brick.y);
-
-                if (brickPath.length > 0) {
-                    const moveDir = getMoveDirectionFromPath(brickPath);
-                    if (moveDir !== null && moveDir !== AITank.direction) {
-                        changeTankDirection(AITank, moveDir);
-                    }
-                    keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-                    aiAction = `Moving Closer to Brick (${distance.toFixed(1)} cells)`;
-                } else {
-                    // Can't path to brick, try shooting from current position
-                    aiAction = "Can't Path to Brick, Trying to Shoot";
-                    if (AITank.direction !== shootDir) {
-                        changeTankDirection(AITank, shootDir);
-                    }
-                    keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-                }
-            }
-            // If we're close enough (within 3 cells), start shooting
-            else if (distance <= 2.5) {
-                aiAction = "Shooting Brick at Close Range";
-                dangerLevel = "Low";
-
-                // Face the brick
-                if (AITank.direction !== shootDir) {
-                    changeTankDirection(AITank, shootDir);
-                }
-
-                // Align to grid if needed
-                alignTankToGrid(AITank);
-
-                // Shoot if ready - NO COOLDOWN CHECK, just shoot when aligned
-                const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
-                if (AITank.direction === shootDir && bulletCooldown === 0 &&
-                    bullets.filter(b => b.isAITank).length < maxBullets) {
-
-                    firePlayerBullet('ai');
-                    aiShooting = true;
-                    aiShotDirection = shootDir;
-                    aiAction = `Shooting Brick (${distance.toFixed(1)} cells)`;
-
-                    // Check if brick was destroyed
-                    if (!aiBrickTarget.brick.isAlive()) {
-                        aiPathBlockedByBrick = false;
-                        aiBrickTarget = null;
-                        aiCurrentPath = []; // Clear path so we can recalculate
-                        aiAction = "Brick Destroyed!";
-                    }
-                } else if (AITank.direction === shootDir) {
-                    // Just wait for cooldown - don't move
-                    aiAction = `Waiting to Shoot Brick (${distance.toFixed(1)} cells)`;
-                }
-            }
+    // 策略：如果太远就靠近，然后射击
+    if (shootDir !== null && hasLOS) {
+        if (distance > 2.5) {
+            approachBrickForShooting(brick, distance);
         } else {
-            // If we don't have line of sight, move to get line of sight
-            aiAction = "Moving to Get Line of Sight";
-            const brickPath = findPathToTarget(aiBrickTarget.x, aiBrickTarget.y);
-
-            if (brickPath.length > 0) {
-                const moveDir = getMoveDirectionFromPath(brickPath);
-                if (moveDir !== null && moveDir !== AITank.direction) {
-                    changeTankDirection(AITank, moveDir);
-                }
-                keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-                aiAction = `Moving to Brick (No LOS, ${distance.toFixed(1)} cells)`;
-            } else {
-                // Can't find path to brick, try a different approach
-                aiAction = "Can't Reach Brick, Changing Strategy";
-                aiPathBlockedByBrick = false;
-                aiBrickTarget = null;
-            }
+            shootBrickAtCloseRange(brick, shootDir, distance);
         }
+    } else {
+        moveToGetLineOfSight(brick, distance);
 
-        updateAIDisplayInfo(aiEnabled, aiTargetEnemy, aiAction, aiCurrentPath, dangerLevel, aiStrategy, aiShooting);
-        return;
+    }
+}
+
+function approachBrickForShooting(brick, distance) {
+    aiAction = "Moving Closer to Brick";
+    dangerLevel = "Low";
+
+    const brickPath = findPathToTarget(brick.x, brick.y);
+    if (brickPath.length > 0) {
+        const moveDir = getMoveDirectionFromPath(brickPath);
+        if (moveDir !== null && moveDir !== AITank.direction) {
+            changeTankDirection(AITank, moveDir);
+        }
+        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+        aiAction = `Moving Closer to Brick (${distance.toFixed(1)} cells)`;
+    } else {
+        // 无法找到路径，尝试从当前位置射击
+        aiAction = "Can't Path to Brick, Trying to Shoot";
+        const shootDir = getShootingDirectionForBrick(aiBrickTarget);
+        if (AITank.direction !== shootDir) {
+            changeTankDirection(AITank, shootDir);
+        }
+        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+    }
+}
+
+function shootBrickAtCloseRange(brick, shootDir, distance) {
+    aiAction = "Shooting Brick at Close Range";
+    dangerLevel = "Low";
+
+    // 面向砖块
+    if (AITank.direction !== shootDir) {
+        changeTankDirection(AITank, shootDir);
     }
 
-    // ========== CHECK CLOSE COMBAT SITUATION ==========
-    aiTargetEnemy = findPriorityEnemy(); // New base-defense priority
+    // 对齐到网格
+    alignTankToGrid(AITank);
+
+    // 射击（没有冷却检查，对齐就射）
+    const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
+    if (AITank.direction === shootDir && bulletCooldown === 0 &&
+        bullets.filter(b => b.isAITank).length < maxBullets) {
+
+        firePlayerBullet('ai');
+        aiShooting = true;
+        aiShotDirection = shootDir;
+        aiAction = `Shooting Brick (${distance.toFixed(1)} cells)`;
+
+        // 检查砖块是否被摧毁
+        if (!aiBrickTarget.brick.isAlive()) {
+            aiPathBlockedByBrick = false;
+            aiBrickTarget = null;
+            aiCurrentPath = [];
+            aiAction = "Brick Destroyed!";
+        }
+    } else if (AITank.direction === shootDir) {
+        // 等待冷却 - 不移动
+        aiAction = `Waiting to Shoot Brick (${distance.toFixed(1)} cells)`;
+    }
+}
+
+function moveToGetLineOfSight(brick, distance) {
+    aiAction = "Moving to Get Line of Sight";
+    const brickPath = findPathToTarget(aiBrickTarget.x, aiBrickTarget.y);
+
+    if (brickPath.length > 0) {
+        const moveDir = getMoveDirectionFromPath(brickPath);
+        if (moveDir !== null && moveDir !== AITank.direction) {
+            changeTankDirection(AITank, moveDir);
+        }
+        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+        aiAction = `Moving to Brick (No LOS, ${distance.toFixed(1)} cells)`;
+    } else {
+        // 无法找到路径，尝试不同方法
+        aiAction = "Can't Reach Brick, Changing Strategy";
+        aiPathBlockedByBrick = false;
+        aiBrickTarget = null;
+    }
+}
+
+function handleCloseCombat() {
+    
+    aiTargetEnemy = findPriorityEnemy();
     if (aiTargetEnemy && isNextToEnemy(aiTargetEnemy, AITank, IMMEDIATE_SHOOT_DISTANCE, CLOSE_COMBAT_DISTANCE)) {
         nextToEnemy = true;
 
-        // IMMEDIATE DESTRUCTION WHEN NEXT TO ENEMY
+        // 当紧邻敌人时立即摧毁
         if (canShootAdjacentEnemy(aiTargetEnemy)) {
+             
+           
             const shootDir = getShootingDirectionForAdjacentEnemy(aiTargetEnemy, AITank);
             if (shootDir !== null && AITank.direction !== shootDir) {
                 changeTankDirection(AITank, shootDir);
@@ -1970,9 +2417,10 @@ function updateAI() {
             alignTankToGrid(AITank);
 
             const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
+            
             if (AITank.canShoot && bulletCooldown === 0 &&
                 bullets.filter(b => b.isAITank).length < maxBullets) {
-
+                
                 firePlayerBullet('ai');
                 aiShooting = true;
                 aiShootCooldown = AI_SHOOT_COOLDOWN;
@@ -1980,48 +2428,63 @@ function updateAI() {
                 aiAction = "IMMEDIATE CLOSE COMBAT!";
                 aiStrategy = "Close Combat";
                 dangerLevel = "Critical";
-
-                document.getElementById('aiDebug').textContent =
-                    `AI: IMMEDIATE FIRE! Enemy adjacent at distance ${Math.sqrt(
-                        Math.pow(aiTargetEnemy.x - AITank.x, 2) +
-                        Math.pow(aiTargetEnemy.y - AITank.y, 2)
-                    ).toFixed(1)}`;
-                updateAIDisplayInfo(aiEnabled, aiTargetEnemy, aiAction, aiCurrentPath, dangerLevel, aiStrategy, aiShooting);
-                return;
+                return true;
             } else {
                 aiAction = "Aiming at Adjacent Enemy";
                 aiStrategy = "Close Combat";
                 dangerLevel = "Critical";
-                document.getElementById('aiDebug').textContent =
-                    `AI: Enemy adjacent! Aiming to shoot immediately`;
-                updateAIDisplayInfo(aiEnabled, aiTargetEnemy, aiAction, aiCurrentPath, dangerLevel, aiStrategy, aiShooting);
-                return;
+                return true;
             }
         }
     }
+    return false;
+}
 
-    // ========== BULLET SAFETY CHECK (HIGHEST PRIORITY) ==========
+function handleBulletSafety() {
+    // 检查无敌状态
+    if (AITank.invulnerableTimer > 60 && frozeTime.time > 60) {
+        return false;
+    }
+
     let bulletCollisionCheck = { willCollide: false };
     let bulletToDestroy = null;
     let safestDirectionInfo = { direction: null, dangerScore: 0, ttc: Infinity };
 
-    // NEW: Skip bullet avoidance if invulnerable timer > 60 (about 1 second remaining)
-    if (AITank.invulnerableTimer <= 60) {
-        bulletCollisionCheck = willCurrentMoveCollideWithBullet();
-        bulletToDestroy = canDestroyBulletWithPrediction();
-        safestDirectionInfo = findSafestDirection();
+    bulletCollisionCheck = willCurrentMoveCollideWithBullet();
+    bulletToDestroy = canDestroyBulletWithPrediction();
+    safestDirectionInfo = findSafestDirection();
+
+    // 更新显示信息
+    updateBulletRiskDisplay(bulletCollisionCheck, safestDirectionInfo);
+
+    // 优先摧毁子弹
+    if (handleBulletDestruction(bulletToDestroy)) {
+        return true;
     }
 
+    // 处理子弹碰撞
+    if (handleBulletCollision(bulletCollisionCheck, safestDirectionInfo)) {
+        return true;
+    }
 
-    // Update display info
+    // 处理中等危险情况
+    if (handleModerateDanger(safestDirectionInfo)) {
+        return true;
+    }
+
+    return false;
+}
+
+function updateBulletRiskDisplay(bulletCollisionCheck, safestDirectionInfo) {
     bulletCollisionRisk = bulletCollisionCheck.willCollide ? "High" :
         safestDirectionInfo.dangerScore > 30 ? "Medium" :
             safestDirectionInfo.dangerScore > 10 ? "Low" : "Safe";
     safeDirection = safestDirectionInfo.direction;
     bulletTimeToCollision = safestDirectionInfo.ttc;
     moveBlockedByBullet = false;
+}
 
-    // If bullet is about to hit and we can destroy it, do that first
+function handleBulletDestruction(bulletToDestroy) {
     const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
     if (bulletToDestroy && bulletToDestroy.ttc < 5 &&
         AITank.canShoot && bulletCooldown === 0 && aiShootCooldown === 0 &&
@@ -2042,192 +2505,213 @@ function updateAI() {
             "Destroying PERPENDICULAR Bullet!" : "Destroying Threatening Bullet";
         aiStrategy = "Bullet Defense";
         dangerLevel = "Critical";
-
-        document.getElementById('aiDebug').textContent =
-            `AI: ${bulletToDestroy.isPerpendicular ? 'PERPENDICULAR ' : ''}Bullet destruction! TTC: ${bulletToDestroy.ttc.toFixed(1)}`;
+        return true;
     }
-    // SPECIAL HANDLING FOR PERPENDICULAR BULLETS
-    else if (bulletCollisionCheck.willCollide && bulletCollisionCheck.type === "perpendicular") {
+    return false;
+}
+
+function handleBulletCollision(bulletCollisionCheck, safestDirectionInfo) {
+    // 特殊处理垂直子弹
+    if (bulletCollisionCheck.willCollide && bulletCollisionCheck.type === "perpendicular") {
         moveBlockedByBullet = true;
         perpendicularBulletRisk = "High";
-
-        // Get safest direction
-        if (safestDirectionInfo.direction !== null) {
-            if (safestDirectionInfo.direction === -1) {
-                // Stop moving - don't press any movement keys
-                aiAction = "STOPPING for Perpendicular Bullet";
-                dangerLevel = "Critical";
-                document.getElementById('aiDebug').textContent =
-                    `AI: STOPPING! Perpendicular bullet collision in ${bulletCollisionCheck.ttc.toFixed(1)} frames`;
-            } else if (AITank.direction !== safestDirectionInfo.direction) {
-                changeTankDirection(AITank, safestDirectionInfo.direction);
-                keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-                aiAction = "Dodging PERPENDICULAR Bullet";
-                dangerLevel = "Critical";
-                bulletsDodged++;
-                document.getElementById('aiDebug').textContent =
-                    `AI: DODGING PERPENDICULAR BULLET! Moving ${['Up', 'Right', 'Down', 'Left'][safestDirectionInfo.direction]}`;
-            } else {
-                // Already moving in safest direction
-                keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-                aiAction = "Evading Perpendicular Bullet";
-                dangerLevel = "High";
-                document.getElementById('aiDebug').textContent =
-                    `AI: Evading perpendicular bullet in current direction | Danger: ${safestDirectionInfo.dangerScore}`;
-            }
-        }
+        handlePerpendicularBullet(safestDirectionInfo, bulletCollisionCheck.ttc);
+        return true;
     }
-    // If current move will cause collision with bullet, change direction
+    // 处理普通子弹碰撞
     else if (bulletCollisionCheck.willCollide && bulletCollisionCheck.ttc < AI_MIN_TTC) {
         moveBlockedByBullet = true;
+        handleRegularBulletCollision(safestDirectionInfo, bulletCollisionCheck.ttc);
+        return true;
+    }
+    return false;
+}
 
-        // Get safest direction
-        if (safestDirectionInfo.direction !== null) {
-            if (safestDirectionInfo.direction === -1) {
-                // Stop moving - don't press any movement keys
-                aiAction = "Stopping for Bullet";
-                dangerLevel = "Critical";
-                document.getElementById('aiDebug').textContent =
-                    `AI: STOPPING! Bullet collision in ${bulletCollisionCheck.ttc.toFixed(1)} frames`;
-            } else if (AITank.direction !== safestDirectionInfo.direction) {
-                changeTankDirection(AITank, safestDirectionInfo.direction);
-                keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-                aiAction = "Dodging Bullet";
-                dangerLevel = "High";
-                bulletsDodged++;
-                document.getElementById('aiDebug').textContent =
-                    `AI: Dodging bullet! Moving ${['Up', 'Right', 'Down', 'Left'][safestDirectionInfo.direction]} | TTC: ${bulletCollisionCheck.ttc.toFixed(1)}`;
-            } else {
-                // Already moving in safest direction
-                keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-                aiAction = "Evading Bullet";
-                dangerLevel = "High";
-                document.getElementById('aiDebug').textContent =
-                    `AI: Evading bullet in current direction | Danger: ${safestDirectionInfo.dangerScore}`;
+function handlePerpendicularBullet(safestDirectionInfo, ttc) {
+    if (safestDirectionInfo.direction === -1) {
+        aiAction = "STOPPING for Perpendicular Bullet";
+        dangerLevel = "Critical";
+    } else if (AITank.direction !== safestDirectionInfo.direction) {
+        changeTankDirection(AITank, safestDirectionInfo.direction);
+        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+        aiAction = "Dodging PERPENDICULAR Bullet";
+        dangerLevel = "Critical";
+        bulletsDodged++;
+    } else {
+        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+        aiAction = "Evading Perpendicular Bullet";
+        dangerLevel = "High";
+    }
+}
+
+function handleRegularBulletCollision(safestDirectionInfo, ttc) {
+    if (safestDirectionInfo.direction === -1) {
+        aiAction = "Stopping for Bullet";
+        dangerLevel = "Critical";
+    } else if (AITank.direction !== safestDirectionInfo.direction) {
+        changeTankDirection(AITank, safestDirectionInfo.direction);
+        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+        aiAction = "Dodging Bullet";
+        dangerLevel = "High";
+        bulletsDodged++;
+    } else {
+        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+        aiAction = "Evading Bullet";
+        dangerLevel = "High";
+    }
+}
+
+function isAITankCloseToAnyEnemy() {
+    for (let enemy of enemyTanks) {
+        // Check if enemy is close (within 8 cells)
+        if (isNextToEnemy(enemy, AITank, 2, 8)) {
+            return true;
+        }
+        
+        // Additional check: Enemy is facing the AI tank AND in same row/column AND has clear line of fire
+        const dx = Math.abs(enemy.x - AITank.x);
+        const dy = Math.abs(enemy.y - AITank.y);
+        
+        // Check if enemy is in same row (aligned horizontally) or same column (aligned vertically)
+        const inSameRow = dy < 1; // Within 1 cell vertically
+        const inSameColumn = dx < 1; // Within 1 cell horizontally
+        
+        if (inSameRow || inSameColumn) {
+            // Check if enemy is facing the AI tank
+            const isFacingAI = isEnemyFacingAITank(enemy);
+            
+            if (isFacingAI) {
+                // Check for clear line of fire (no obstacles between enemy and AI)
+                const lineClear = !checkObstacleBetween(enemy.x, enemy.y, AITank.x, AITank.y);
+                
+                if (lineClear) {
+                    return true;
+                }
             }
         }
     }
-    // If current path has moderate danger, consider safer alternative
-    else if (safestDirectionInfo.dangerScore > 30 &&
+    return false;
+}
+
+function handleModerateDanger(safestDirectionInfo) {
+    if (safestDirectionInfo.dangerScore > 30 &&
         safestDirectionInfo.direction !== AITank.direction &&
         safestDirectionInfo.direction !== null) {
 
         if (safestDirectionInfo.direction === -1) {
-            // Safer to stop
             aiAction = "Pausing for Safety";
             dangerLevel = "Medium";
-            document.getElementById('aiDebug').textContent =
-                `AI: Pausing - danger score: ${safestDirectionInfo.dangerScore}`;
+            return true;
         } else {
             changeTankDirection(AITank, safestDirectionInfo.direction);
             keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
             aiAction = "Taking Safer Route";
             dangerLevel = "Medium";
-            document.getElementById('aiDebug').textContent =
-                `AI: Taking safer ${['Up', 'Right', 'Down', 'Left'][safestDirectionInfo.direction]} route | Danger: ${safestDirectionInfo.dangerScore}`;
+            return true;
         }
     }
-    // Normal behavior when safe from bullets
-    else if (aiShootCooldown === 0) {
-        aiTargetEnemy = findPriorityEnemy();
-        enemyFacingPlayer = aiTargetEnemy ? isEnemyFacingAITank(aiTargetEnemy) : false;
+    return false;
+}
 
-        if (aiTargetEnemy) {
-            const dx = aiTargetEnemy.x - AITank.x;
-            const dy = aiTargetEnemy.y - AITank.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+function executeCombatLogic() {
+    aiTargetEnemy = findPriorityEnemy();
+    enemyFacingPlayer = aiTargetEnemy ? isEnemyFacingAITank(aiTargetEnemy) : false;
 
-            lineOfSightToEnemy = hasLineOfSightToEnemy(aiTargetEnemy);
-            canShootEnemy = canShootEnemyFromCurrentPosition(aiTargetEnemy);
+    if (aiTargetEnemy) {
+        const dx = aiTargetEnemy.x - AITank.x;
+        const dy = aiTargetEnemy.y - AITank.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-            // ========== PREDICTIVE SHOOTING LOGIC ==========
-            if (shouldUsePredictiveShooting(aiTargetEnemy) && distance > AI_PREDICTION_DISTANCE_THRESHOLD) {
-                predictionActive = true;
+        lineOfSightToEnemy = hasLineOfSightToEnemy(aiTargetEnemy);
+        canShootEnemy = canShootEnemyFromCurrentPosition(aiTargetEnemy);
 
-                // Calculate future position
-                enemyFuturePosition = calculateEnemyFuturePosition(aiTargetEnemy, AI_PREDICTION_TIME);
-
-                // Check if enemy has clear path to future position
-                enemyPathClear = checkEnemyPathToFuture(aiTargetEnemy, enemyFuturePosition);
-
-                // Determine shooting direction for future position
-                const futureShootingDirection = getShootingDirectionForFuturePosition(enemyFuturePosition);
-
-                // Check if we have line of sight to future position
-                predictionLineOfSight = hasLineOfSightToFuturePosition(enemyFuturePosition, futureShootingDirection);
-
-                // Decide if we should predictive shoot
-                shouldPredictiveShoot = enemyPathClear && predictionLineOfSight;
-
-                if (shouldPredictiveShoot) {
-                    aiStrategy = "Predictive Shooting";
-
-                    // Face the shooting direction
-                    if (AITank.direction !== futureShootingDirection) {
-                        changeTankDirection(AITank, futureShootingDirection);
-                    }
-
-                    // Align to grid if needed
-                    alignTankToGrid(AITank);
-
-                    // Shoot if conditions are met
-                    const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
-                    if (AITank.canShoot && bulletCooldown === 0 &&
-                        bullets.filter(b => b.isAITank).length < maxBullets && !wouldBulletHitBase(AITank.x, AITank.y, futureShootingDirection)) {
-
-                        firePlayerBullet('ai');
-                        aiShooting = true;
-                        aiShootCooldown = AI_SHOOT_COOLDOWN;
-                        aiShotDirection = futureShootingDirection;
-                        aiAction = "Predictive Shot!";
-                        dangerLevel = "Medium";
-
-                        document.getElementById('aiDebug').textContent =
-                            `AI: Predictive shot at future position (${enemyFuturePosition.x.toFixed(1)}, ${enemyFuturePosition.y.toFixed(1)})!`;
-                    } else {
-                        keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-                        aiAction = "Aiming for Predictive Shot";
-                        dangerLevel = "Low";
-
-                        document.getElementById('aiDebug').textContent =
-                            `AI: Aiming for predictive shot. Future pos: (${enemyFuturePosition.x.toFixed(1)}, ${enemyFuturePosition.y.toFixed(1)})`;
-                    }
-                } else {
-                    aiStrategy = "Approach for Predictive";
-                    aiAction = "Moving to Predictive Position";
-                    document.getElementById('aiDebug').textContent =
-                        `AI: Predictive conditions not met. Path clear: ${enemyPathClear}, LOS: ${predictionLineOfSight}`;
-
-                    // Fall back to normal behavior
-                    executeNormalAIBehavior(aiTargetEnemy, distance);
-                }
-            } else {
-                // Normal behavior (close range or predictive not applicable)
-                executeNormalAIBehavior(aiTargetEnemy, distance);
-            }
-        } else {
-            aiStrategy = "Exploring";
-            if (frameCount % 120 === 0 && !AITank.needsAlignment) {
-                const newDirection = (AITank.direction + 1) % 4;
-                changeTankDirection(AITank, newDirection);
-            }
-            keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-            aiAction = "Exploring";
-            dangerLevel = "Low";
-
-            document.getElementById('aiDebug').textContent = "AI: Exploring - No enemies found";
+        // 尝试预测射击
+        if (tryPredictiveShooting(aiTargetEnemy, distance)) {
+            return;
         }
+
+        // 正常战斗行为
+        executeNormalAIBehavior(aiTargetEnemy, distance);
     } else {
-        aiStrategy = "Maintain Direction";
+        exploreWhenNoEnemies();
+    }
+}
+
+function tryPredictiveShooting(enemy, distance) {
+    if (shouldUsePredictiveShooting(enemy) && distance > AI_PREDICTION_DISTANCE_THRESHOLD) {
+        predictionActive = true;
+
+        // 计算未来位置
+        enemyFuturePosition = calculateEnemyFuturePosition(enemy, AI_PREDICTION_TIME);
+
+        // 检查敌人到未来位置的路径是否畅通
+        enemyPathClear = checkEnemyPathToFuture(enemy, enemyFuturePosition);
+
+        // 确定未来位置的射击方向
+        const futureShootingDirection = getShootingDirectionForFuturePosition(enemyFuturePosition);
+
+        // 检查是否有到未来位置的视线
+        predictionLineOfSight = hasLineOfSightToFuturePosition(enemyFuturePosition, futureShootingDirection);
+
+        // 决定是否进行预测射击
+        shouldPredictiveShoot = enemyPathClear && predictionLineOfSight;
+
+        if (shouldPredictiveShoot) {
+            executePredictiveShot(enemyFuturePosition, futureShootingDirection);
+            return true;
+        }
+    }
+    return false;
+}
+
+function executePredictiveShot(futurePosition, shootDir) {
+    aiStrategy = "Predictive Shooting";
+
+    // 面向射击方向
+    if (AITank.direction !== shootDir) {
+        changeTankDirection(AITank, shootDir);
+    }
+
+    // 对齐到网格
+    alignTankToGrid(AITank);
+
+    // 射击
+    const maxBullets = canShootMultipleBullets(AITank) ? MAX_BULLET : 1;
+    if (AITank.canShoot && bulletCooldown === 0 &&
+        bullets.filter(b => b.isAITank).length < maxBullets && !wouldBulletHitBase(AITank.x, AITank.y, shootDir)) {
+
+        firePlayerBullet('ai');
+        aiShooting = true;
+        aiShootCooldown = AI_SHOOT_COOLDOWN;
+        aiShotDirection = shootDir;
+        aiAction = "Predictive Shot!";
+        dangerLevel = "Medium";
+    } else {
         keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
-        aiAction = `Maintain Direction (${aiShootCooldown})`;
+        aiAction = "Aiming for Predictive Shot";
         dangerLevel = "Low";
     }
+}
 
-    if (AITank.needsAlignment) {
-        alignTankToGrid(AITank);
+function exploreWhenNoEnemies() {
+    aiStrategy = "Exploring";
+    if (frameCount % 120 === 0 && !AITank.needsAlignment) {
+        const newDirection = (AITank.direction + 1) % 4;
+        changeTankDirection(AITank, newDirection);
     }
+    keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+    aiAction = "Exploring";
+    dangerLevel = "Low";
+}
 
+function maintainCurrentDirection() {
+    aiStrategy = "Maintain Direction";
+    keys[['w', 'd', 's', 'a'][AITank.direction]] = true;
+    aiAction = `Maintain Direction (${aiShootCooldown})`;
+    dangerLevel = "Low";
+}
+
+function updateAIDisplay() {
     updateAIDisplayInfo(aiEnabled, aiTargetEnemy, aiAction, aiCurrentPath, dangerLevel, aiStrategy, aiShooting);
 }
 
@@ -2236,7 +2720,7 @@ function executeNormalAIBehavior(enemy, distance) {
     lineOfSightToEnemy = hasLineOfSightToEnemy(enemy);
     canShootEnemy = canShootEnemyFromCurrentPosition(enemy);
 
-    if (enemyFacingPlayer) {
+    if (enemyFacingPlayer && lineOfSightToEnemy) {
         aiStrategy = "Align Before Attack";
 
         const isAligned = isAlignedWithEnemy(enemy);
@@ -2341,11 +2825,26 @@ function callUpdateAIDisplay() {
 
 // ========== TANK UPDATE FUNCTIONS ==========
 function updateTank(tank, isAI = true) {
+
+    if(!isAI){
+        if(humanTank.moving){
+            sound[10].play();
+            sound[11].pause();
+        }else{
+             sound[10].pause();
+             sound[11].play();
+             if(frozeTime.time > 0 || enemyTanks.length == 0)
+                sound[11].pause();
+            
+        }
+    }
+   
+    
     if (!tank.isAlive) {
         if (tank.respawnTimer == 52) {
-            if (isAI && AILives > 0)
+            if (isAI && AITank.lives > 0)
                 createSpawnAnimation(16, 24, particleEffects);
-            else if (humanLives > 0 && !isAI)
+            else if (humanTank.lives > 0 && !isAI)
                 createSpawnAnimation(8, 24, particleEffects);
         }
         tank.respawnTimer--;
@@ -2372,15 +2871,7 @@ function updateTank(tank, isAI = true) {
         if (keys['s']) moveDirection = 2;
         if (keys['a']) moveDirection = 3;
         if (keys['d']) moveDirection = 1;
-
-        if (lastDirectionKey && keys[lastDirectionKey]) {
-            switch (lastDirectionKey) {
-                case 'w': moveDirection = 0; break;
-                case 's': moveDirection = 2; break;
-                case 'a': moveDirection = 3; break;
-                case 'd': moveDirection = 1; break;
-            }
-        }
+    
     } else {
         // Human player controls
         const maxBullets = canShootMultipleBullets(tank) ? MAX_BULLET : 1;
@@ -2407,6 +2898,7 @@ function updateTank(tank, isAI = true) {
     if (tank.invulnerableTimer && tank.invulnerableTimer > 0)
         tank.invulnerableTimer--;
 
+
     if (moveDirection !== null && moveDirection !== tank.direction) {
         const oldDirection = tank.direction;
 
@@ -2417,6 +2909,8 @@ function updateTank(tank, isAI = true) {
         tank.direction = moveDirection;
         tank.lastDirectionChangeFrame = frameCount;
     }
+
+
 
     if (tank.needsAlignment) {
         alignTankToGrid(tank);
@@ -2515,9 +3009,9 @@ function updateEnemyTanks() {
             continue;
         }
 
-        if (enemy.spawnProtection && enemy.spawnProtection > 0) {
-            enemy.spawnProtection--;
-        }
+
+        if (frozeTime.time > 0)
+            continue;
 
         enemy.decisionTimer--;
         enemy.lastDirectionChange++;
@@ -2693,6 +3187,8 @@ function updateBullets() {
                 base.isAlive = false;
                 createBulletExplosion(bullet.x, bullet.y, BULLET_SIZE, CELL_SIZE, particleEffects);
                 createBigExplosion(base, particleEffects)
+                sound[6].currentTime = 0;
+                sound[6].play();
                 bullets.splice(i, 1);
                 break;
             }
@@ -2706,12 +3202,32 @@ function updateBullets() {
         // If bullet hit something, destroy it
         if (hitSteel || hitBrick) {
             createBulletExplosion(bullet.x, bullet.y, BULLET_SIZE, CELL_SIZE, particleEffects);
-
+            
             // Apply cooldown based on which tank fired the bullet
             if (bullet.isAITank) {
+                if(AITank.powerLevel <= 3 && hitSteel){
+                    sound[1].currentTime=0;
+                    sound[1].play();
+                }
+
+                if(hitBrick || (AITank.powerLevel > 3 && hitSteel)){
+                    sound[2].currentTime=0;
+                    sound[2].play();
+                }
+
+
                 bulletCooldown = getBulletCooldown(AITank);
             }
             if (bullet.isHuman) {
+                if(humanTank.powerLevel <= 3 && hitSteel){
+                    sound[1].currentTime=0;
+                    sound[1].play();
+                }
+                 if(hitBrick || (humanTank.powerLevel > 3 && hitSteel)){
+                    sound[2].currentTime=0;
+                    sound[2].play();
+                }
+
                 humanTank.bulletCooldown = getBulletCooldown(humanTank);
             }
 
@@ -2725,8 +3241,8 @@ function updateBullets() {
                 (bullet.isHuman && !otherBullet.isAITank && !otherBullet.isHuman) ||
                 (!bullet.isAITank && !bullet.isHuman && (otherBullet.isAITank || otherBullet.isHuman))) {
 
-                if (checkPhysicalCollision(bullet.x, bullet.y, BULLET_SIZE, BULLET_SIZE,
-                    otherBullet.x, otherBullet.y, BULLET_SIZE, BULLET_SIZE)) {
+                if (checkPhysicalCollision(bullet.x - 0.1, bullet.y - 0.1, BULLET_SIZE + 0.2, BULLET_SIZE + 0.2,
+                    otherBullet.x - 0.1, otherBullet.y - 0.1, BULLET_SIZE + 0.2, BULLET_SIZE + 0.2)) {
 
                     if (bullet.isAITank) {
                         bulletCooldown = getBulletCooldown(AITank);
@@ -2757,16 +3273,24 @@ function updateBullets() {
                         humanTank.bulletCooldown = getBulletCooldown(humanTank);
                     }
 
-                    if (enemy.playerType == "enemy4" && enemy.health > 1) {
-                        if (enemy.health == 4 && enemy.hasPowerUp)
-                            enemy.hasPowerUp = false;
+                    if (enemy.hasPowerUp) {
+                        enemy.hasPowerUp = false;
+                        powerUp.spawn();
+                        sound[5].currentTime = 0;
+                        sound[5].play();
+                    }
 
+                    if (enemy.playerType == "enemy4" && enemy.health > 1) {
                         enemy.health--;
+                        sound[4].currentTime = 0;
+                        sound[4].play();
                         break;
                     }
 
                     enemy.isAlive = false;
                     createBigExplosion(enemy, particleEffects)
+                    sound[3].currentTime = 0;
+                    sound[3].play();
 
 
                     if (bullet.isAITank) {
@@ -2791,6 +3315,8 @@ function updateBullets() {
                 if (!handleTankHit(AITank)) {
                     // Tank survived due to extra life
                     createBulletExplosion(bullet.x, bullet.y, BULLET_SIZE, CELL_SIZE, particleEffects);
+                    sound[4].currentTime = 0;
+                    sound[4].play();
                     bullets.splice(i, 1);
                     break;
                 }
@@ -2799,8 +3325,10 @@ function updateBullets() {
                 AITank.canShoot = false;
                 AITank.respawnTimer = 100;
                 createBulletExplosion(bullet.x, bullet.y, BULLET_SIZE, CELL_SIZE, particleEffects);
-                createBigExplosion(AITank, particleEffects)
-                AILives--;
+                createBigExplosion(AITank, particleEffects);
+                sound[6].currentTime = 0;
+                sound[6].play();
+                AITank.lives--;
                 AITank.powerLevel = 1;
                 bullets.splice(i, 1);
                 break;
@@ -2818,6 +3346,8 @@ function updateBullets() {
                 if (!handleTankHit(humanTank)) {
                     // Tank survived due to extra life
                     createBulletExplosion(bullet.x, bullet.y, BULLET_SIZE, CELL_SIZE, particleEffects);
+                    sound[4].currentTime = 0;
+                    sound[4].play();
                     bullets.splice(i, 1);
                     break;
                 }
@@ -2826,8 +3356,10 @@ function updateBullets() {
                 humanTank.canShoot = false;
                 humanTank.respawnTimer = 100;
                 createBulletExplosion(bullet.x, bullet.y, BULLET_SIZE, CELL_SIZE, particleEffects);
-                createBigExplosion(humanTank, particleEffects)
-                humanLives--;
+                createBigExplosion(humanTank, particleEffects);
+                sound[6].currentTime = 0;
+                sound[6].play();
+                humanTank.lives--;
                 humanTank.powerLevel = 1;
                 bullets.splice(i, 1);
                 break;
@@ -2849,15 +3381,18 @@ function updateBullets() {
             if (bullet.y > GRID_SIZE) explosionY = GRID_SIZE - 0.5;
 
             createBulletExplosion(explosionX, explosionY, BULLET_SIZE, CELL_SIZE, particleEffects);
-
             bullets.splice(i, 1);
 
             // Apply cooldown based on which tank fired the bullet
             if (bullet.isAITank) {
                 bulletCooldown = getBulletCooldown(AITank);
+                sound[1].currentTime = 0;
+                sound[1].play();
             }
             if (bullet.isHuman) {
                 humanTank.bulletCooldown = getBulletCooldown(humanTank);
+                sound[1].currentTime = 0;
+                sound[1].play();
             }
         }
     }
@@ -2870,6 +3405,8 @@ function firePlayerBullet(playerType) {
     let tank, isAITank, isHuman;
 
     if (playerType === 'ai') {
+        sound[0].currentTime = 0;
+        sound[0].play();
         tank = AITank;
         isAITank = true;
         isHuman = false;
@@ -2881,6 +3418,9 @@ function firePlayerBullet(playerType) {
 
         bulletCooldown = getBulletCooldown(tank);
     } else {
+        
+        sound[0].currentTime = 0;
+        sound[0].play();
         tank = humanTank;
         isAITank = false;
         isHuman = true;
@@ -2934,6 +3474,13 @@ function setZoomLevel(level) {
 }
 
 function togglePause() {
+    if(!gamePaused){
+        sound[9].currentTime = 0;
+        sound[9].play();
+        sound[10].pause();
+        sound[11].pause()
+    }
+
     gamePaused = !gamePaused;
     const button = document.getElementById('pauseBtn');
     button.textContent = gamePaused ? 'Resume' : 'Pause';
@@ -2959,16 +3506,16 @@ function toggleAI() {
 function toggleBoundingBox() {
     showBoundingBox = !showBoundingBox;
     const button = document.getElementById('toggleBoundingBox');
-    button.textContent = showBoundingBox ? 'Hide Bounding Box' : 'Show Bounding Box';
+    button.textContent = showBoundingBox ? 'Debug' : 'Debug';
     button.classList.toggle('active', showBoundingBox);
-}
 
-function togglePrediction() {
     showPredictions = !showPredictions;
-    const button = document.getElementById('togglePrediction');
+    button = document.getElementById('togglePrediction');
     button.textContent = showPredictions ? 'Hide Predictions' : 'Show Predictions';
     button.classList.toggle('active', showPredictions);
 }
+
+
 
 // ========== MAIN GAME LOOP ==========
 function gameLoop() {
@@ -2976,12 +3523,15 @@ function gameLoop() {
         requestAnimationFrame(gameLoop);
         return;
     }
-
+    
     updateTank(AITank, true);
     updateTank(humanTank, false);
     updateEnemyTanks();
+    if (frozeTime.time > 0)
+        frozeTime.time--;
     updateBullets();
     updateParticleEffects(particleEffects);
+    checkAllPowerUpCollisions(powerUp, AITank, humanTank, particleEffects, enemyTanks, frozeTime, brickWalls, steelWalls);
 
     aiTargetEnemy = findPriorityEnemy();
     enemyFacingPlayer = aiTargetEnemy ? isEnemyFacingAITank(aiTargetEnemy) : false;
@@ -2994,11 +3544,14 @@ function gameLoop() {
     drawRivers(ctx, rivers, zoomLevel, CELL_SIZE, showBoundingBox); // NEW: Draw rivers
     drawBase(ctx, base, zoomLevel, CELL_SIZE, BASE_SIZE);
     drawBullets(ctx, bullets, zoomLevel, CELL_SIZE, BULLET_SIZE, showBoundingBox);
-    drawTank(ctx, AITank, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundingBox, frameCount);
-    drawTank(ctx, humanTank, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundingBox, frameCount);
-    enemyTanks.forEach(enemy => drawTank(ctx, enemy, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundingBox, frameCount));
+    drawTank(ctx, AITank, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundingBox, frameCount, frozeTime);
+    drawTank(ctx, humanTank, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundingBox, frameCount, frozeTime);
+    enemyTanks.forEach(enemy => drawTank(ctx, enemy, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundingBox, frameCount, frozeTime));
     drawBushes(ctx, bushes, zoomLevel, CELL_SIZE);
     drawParticleEffects(CELL_SIZE, zoomLevel, ctx, particleEffects);
+
+   
+    powerUp.draw(ctx, CELL_SIZE * zoomLevel, frameCount, zoomLevel);
 
     // Draw prediction visuals
     if (showPredictions) {
@@ -3016,22 +3569,19 @@ function gameLoop() {
 
 // ========== INITIALIZATION ==========
 async function init() {
-    document.getElementById('zoom1x').addEventListener('click', () => setZoomLevel(1));
-    document.getElementById('zoom2x').addEventListener('click', () => setZoomLevel(2));
-    document.getElementById('zoom3x').addEventListener('click', () => setZoomLevel(3));
-
     document.getElementById('newGameBtn').addEventListener('click', function () {
         location.reload(); // Reloads the current page
     });
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('toggleBoundingBox').addEventListener('click', toggleBoundingBox);
-    document.getElementById('togglePrediction').addEventListener('click', togglePrediction);
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
     updateCanvasSize(BASE_SIZE, zoomLevel, canvas);
     await initializeMap(4, brickWalls, steelWalls, rivers, bushes); // UPDATED: Pass rivers and bushes arrays
+    await initializeSound(sound);
+    powerUp.setSound(sound);
     await loadEntitySprites();
     await loadParticleSprites()
     bricksDestroyed = 0;

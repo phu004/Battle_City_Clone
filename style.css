@@ -70,7 +70,7 @@ body {
 .bottom-panel {
     display: flex;
     gap: 20px;
-    width: 100%;
+    
     justify-content: center;
 }
 
@@ -131,7 +131,6 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 15px;
     justify-content: center;
 }
 
@@ -268,4 +267,621 @@ button.active {
 .steel-info {
     color: #8888FF;
     font-weight: bold;
+}
+
+/* Add to your style.css file */
+
+.game-area {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.game-container {
+    flex: 1;
+}
+
+.right-controls {
+    width: 110px;
+    margin-top: 10px;
+}
+
+.zoom-controls-panel {
+    background-color: rgba(30, 30, 30, 0.9);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+}
+
+.zoom-header {
+    font-size: 16px;
+    font-weight: bold;
+    color: #4CAF50;
+    margin-bottom: 0px;
+    text-align: center;
+    padding-bottom: 8px;
+}
+
+.zoom-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 0px;
+}
+
+.zoom-btn {
+    padding: 8px 15px;
+    background-color: #333;
+    color: #fff;
+    border: 2px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.zoom-btn:hover {
+    background-color: #444;
+    border-color: #666;
+    transform: translateY(-2px);
+}
+
+.zoom-btn.active {
+    background-color: #4CAF50;
+    border-color: #66BB6A;
+    color: white;
+}
+
+.zoom-description {
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+    padding-top: 8px;
+    border-top: 1px solid #444;
+}
+
+#zoomSizeDisplay {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+
+/* Mobile Responsive Fixes */
+@media screen and (max-width: 768px) {
+    body {
+        padding: 10px;
+        overflow-x: hidden;
+    }
+    
+    .container {
+        max-width: 100vw;
+        padding: 0 10px;
+    }
+    
+    .game-area {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 15px !important;
+        width: 100% !important;
+    }
+    
+    .game-container {
+        width: 100% !important;
+        max-width: 100vw !important;
+        margin: 0 auto !important;
+        border: 3px solid #ffcc00 !important;
+        order: 2; /* Game canvas goes second */
+    }
+    
+    #gameCanvas {
+        width: 100% !important;
+        height: auto !important;
+        max-width: 100% !important;
+    }
+    
+    .right-controls {
+        width: 100% !important;
+        margin-top: 0 !important;
+        order: 1; /* Controls go first */
+        display: flex;
+        justify-content: center;
+        margin-bottom: 15px; /* Space between controls and game */
+        position: relative;
+        padding: 0 10px;
+    }
+    
+    .zoom-controls-panel {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+        background-color: rgba(30, 30, 30, 0.95);
+        border: 2px solid #555;
+        border-radius: 10px;
+        padding: 12px 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    }
+    
+    .zoom-header {
+        font-size: 16px;
+        margin-bottom: 8px;
+        color: #ffcc00;
+        text-align: center;
+    }
+    
+    .zoom-buttons {
+        display: flex;
+        flex-direction: row !important; /* All buttons in one line */
+        justify-content: space-between; /* Evenly distribute */
+        align-items: center;
+        gap: 8px; /* Small gap between buttons */
+        width: 100%;
+    }
+    
+    .zoom-btn {
+        flex: 1; /* All buttons equal width */
+        min-width: 0; /* Allow buttons to shrink */
+        padding: 12px 8px;
+        font-size: 15px;
+        background-color: #333;
+        border: 2px solid #666;
+        border-radius: 6px;
+        font-weight: bold;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .zoom-btn:hover {
+        background-color: #444;
+        transform: translateY(-2px);
+    }
+    
+    /* Info panel adjustments */
+    .info-panel {
+        min-width: 100% !important;
+        max-width: 100vw !important;
+        padding: 12px !important;
+        margin: 15px 0 0 0 !important;
+        overflow-x: auto;
+        order: 3;
+    }
+    
+    .bottom-panel {
+        display: block !important;
+        margin-top: 15px;
+    }
+    
+    .stats {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+        font-size: 14px;
+    }
+    
+    .stat-item {
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    
+    .stat-label {
+        font-size: 13px;
+        margin-right: 5px;
+    }
+    
+    .stat-value {
+        min-width: 70px;
+        font-size: 13px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .main-content {
+        gap: 15px;
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* For very small screens (under 480px) */
+@media screen and (max-width: 480px) {
+    .right-controls {
+        margin-bottom: 10px;
+        padding: 0 8px;
+    }
+    
+    .zoom-controls-panel {
+        padding: 10px 12px;
+        border-radius: 8px;
+    }
+    
+    .zoom-header {
+        font-size: 15px;
+        margin-bottom: 6px;
+    }
+    
+    .zoom-buttons {
+        gap: 6px; /* Smaller gap on very small screens */
+    }
+    
+    .zoom-btn {
+        padding: 10px 6px;
+        font-size: 14px;
+        border-width: 1px;
+    }
+    
+    body {
+        padding: 5px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    #gameCanvas {
+        max-height: 70vh;
+    }
+}
+
+/* For extra small screens (under 360px) */
+@media screen and (max-width: 360px) {
+    .zoom-btn {
+        padding: 10px 4px;
+        font-size: 13px;
+    }
+    
+    .zoom-buttons {
+        gap: 4px;
+    }
+    
+    .zoom-controls-panel {
+        padding: 8px 10px;
+    }
+}
+
+/* For landscape mobile */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    .game-area {
+        flex-direction: row !important;
+        gap: 10px !important;
+        align-items: flex-start;
+    }
+    
+    .game-container {
+        flex: 2;
+        order: 1;
+    }
+    
+    .right-controls {
+        flex: 1;
+        order: 2;
+        margin-bottom: 0;
+        margin-left: 10px;
+        max-width: 150px;
+        padding: 0;
+    }
+    
+    .zoom-controls-panel {
+        max-width: 100%;
+    }
+    
+    .zoom-buttons {
+        flex-direction: column !important; /* Stack vertically in landscape */
+        gap: 8px;
+    }
+    
+    .zoom-btn {
+        width: 100%;
+        min-height: 44px; /* Touch-friendly size */
+        padding: 12px 8px;
+    }
+    
+    #gameCanvas {
+        max-height: 80vh;
+    }
+}
+
+/* Mobile Gamepad - Simplified Version */
+.mobile-gamepad {
+    display: none;
+    width: 100%;
+    max-width: 400px;
+    margin: 10px auto 5px auto;
+    padding: 10px;
+    background-color: rgba(45, 45, 68, 0.9);
+    border-radius: 12px;
+    border: 2px solid #555;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    touch-action: manipulation;
+}
+
+.gamepad-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    position: relative;
+    min-height: 120px;
+}
+
+/* Movement Area (Left side) */
+.movement-area {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dpad-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dpad-row {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+}
+
+/* Small, clean D-pad buttons */
+.dpad-btn {
+    width: 45px;
+    height: 45px;
+    background-color: #333;
+    border: 2px solid #555;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.08s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+.dpad-btn:active, .dpad-btn.active {
+    background-color: #ffcc00;
+    border-color: #ff9900;
+}
+
+.dpad-btn .arrow {
+    font-size: 18px;
+    color: #ddd;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px #000;
+    transition: color 0.08s;
+}
+
+.dpad-btn:active .arrow, .dpad-btn.active .arrow {
+    color: #000;
+}
+
+.dpad-center {
+    width: 45px;
+    height: 45px;
+    background-color: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+}
+
+/* Fire Button (Right side) */
+.action-area {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.fire-btn {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 3px solid #cc0000;
+    background: linear-gradient(145deg, #ff3333, #cc0000);
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.08s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 0 #990000, 0 6px 8px rgba(0, 0, 0, 0.3);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.fire-btn:active, .fire-btn.active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #990000, 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(145deg, #ff6666, #ff3333);
+}
+
+/* Pause Button (Bottom center, spans full width) */
+.pause-area {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 5px;
+    border-top: 1px solid #444;
+    margin-top: 5px;
+}
+
+.pause-btn {
+    padding: 8px 25px;
+    background-color: #444;
+    border: 2px solid #666;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.08s;
+    min-width: 120px;
+    text-align: center;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pause-btn:active, .pause-btn.active {
+    background-color: #ffcc00;
+    border-color: #ff9900;
+    color: #000;
+    transform: translateY(2px);
+}
+
+/* Show gamepad only on mobile */
+@media screen and (max-width: 768px) {
+    .mobile-gamepad {
+        display: block;
+        order: 3;
+    }
+    
+    .game-area {
+        flex-direction: column;
+    }
+    
+    .right-controls {
+        order: 1;
+        margin-bottom: 10px;
+    }
+    
+    .game-container {
+        order: 2;
+        max-width: 100vw !important;
+    }
+    
+    .bottom-panel {
+        order: 4;
+        margin-top: 10px;
+    }
+    
+    #pauseBtn {
+        display: none;
+    }
+}
+
+/* Landscape mode adjustments */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    .mobile-gamepad {
+        max-width: 350px;
+        margin: 5px auto;
+        padding: 8px;
+    }
+    
+    .gamepad-container {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr auto;
+        min-height: 100px;
+    }
+    
+    .dpad-btn {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .dpad-btn .arrow {
+        font-size: 16px;
+    }
+    
+    .dpad-center {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .fire-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 12px;
+    }
+    
+    .pause-btn {
+        padding: 6px 20px;
+        font-size: 12px;
+        min-width: 100px;
+    }
+}
+
+/* Small screens */
+@media screen and (max-width: 480px) {
+    .mobile-gamepad {
+        max-width: 95%;
+        padding: 8px;
+        border-radius: 10px;
+    }
+    
+    .dpad-btn {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .dpad-btn .arrow {
+        font-size: 16px;
+    }
+    
+    .dpad-center {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .fire-btn {
+        width: 65px;
+        height: 65px;
+        font-size: 13px;
+    }
+    
+    .pause-btn {
+        padding: 7px 20px;
+        font-size: 13px;
+    }
+}
+
+/* Very small screens */
+@media screen and (max-width: 360px) {
+    .mobile-gamepad {
+        padding: 6px;
+    }
+    
+    .gamepad-container {
+        gap: 8px;
+    }
+    
+    .dpad-btn {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .dpad-btn .arrow {
+        font-size: 14px;
+    }
+    
+    .dpad-center {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .fire-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 12px;
+    }
+    
+    .pause-btn {
+        padding: 6px 18px;
+        font-size: 12px;
+        min-width: 100px;
+    }
 }

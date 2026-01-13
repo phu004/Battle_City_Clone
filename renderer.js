@@ -183,7 +183,7 @@ export function drawPerpendicularBulletWarnings(ctx, zoomLevel, CELL_SIZE, BULLE
     }
 }
 
-export function drawTank(ctx, tank, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundingBox, frameCount) {
+export function drawTank(ctx, tank, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundingBox, frameCount, frozeTime) {
     if (!tank.isAlive) return;
 
     const scaledCellSize = CELL_SIZE * zoomLevel;
@@ -198,6 +198,8 @@ export function drawTank(ctx, tank, zoomLevel, CELL_SIZE, TANK_SIZE, showBoundin
         if (frameCount % 6 >= 3)
             movementOffset = 16;
     }
+    if(frozeTime.time > 0 && tank.playerType != "human" && tank.playerType != "ai")
+        movementOffset = 0;
 
     if (tank.playerType == "human" || tank.playerType == "ai") {
         if(tank.firingDirection != null)
@@ -453,3 +455,5 @@ export function drawBase(ctx, base, zoomLevel, CELL_SIZE) {
         baseHeight
     );
 }
+
+

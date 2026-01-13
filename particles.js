@@ -75,6 +75,29 @@ export function createBulletExplosion(x, y, BULLET_SIZE, CELL_SIZE, particleEffe
     });
 }
 
+export function createPowerUpScore(powerUp, particleEffects) {
+    let x = powerUp.x;
+    let y = powerUp.y;
+
+    let lifetime = (3) * 16;
+    let frames = [];
+    frames.push(
+        ...Array(3).fill({ x: 352, y: 160, width: 16, height: 16 })
+    );
+
+    particleEffects.push({
+        x: x + 1,
+        y: y + 1,
+        lifetime: lifetime,
+        maxLifetime: lifetime,
+        // Animation properties
+        frameIndex: 0,
+        frameTimer: 0,
+        frames: frames,
+        frameDelay: Math.floor(lifetime / frames.length),
+    });
+}
+
 export function createBigExplosion(entity, particleEffects) {
     let x = entity.x;
     let y = entity.y;
@@ -84,19 +107,19 @@ export function createBigExplosion(entity, particleEffects) {
         explosionFrame.push(
             ...Array(3).fill({ x: 288, y: 160, width: 16, height: 16 })
         );
-    }else if (entity.playerType == "enemy2") {
+    } else if (entity.playerType == "enemy2") {
         explosionFrame.push(
             ...Array(3).fill({ x: 304, y: 160, width: 16, height: 16 })
         );
-    }else if (entity.playerType == "enemy3") {
+    } else if (entity.playerType == "enemy3") {
         explosionFrame.push(
             ...Array(3).fill({ x: 320, y: 160, width: 16, height: 16 })
         );
-    }else if (entity.playerType == "enemy4") {
+    } else if (entity.playerType == "enemy4") {
         explosionFrame.push(
             ...Array(3).fill({ x: 336, y: 160, width: 16, height: 16 })
         );
-    }else{
+    } else {
         lifetime = 13 * 4;
     }
 
@@ -163,3 +186,4 @@ export function drawParticleEffects(CELL_SIZE, zoomLevel, ctx, particleEffects) 
 
     }
 }
+
