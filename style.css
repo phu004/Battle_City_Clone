@@ -586,7 +586,9 @@ button.active {
     }
 }
 
-/* Mobile Gamepad - Gesture D-Pad */
+/* MOBILE GAMEPAD STYLES - Add to your existing style.css */
+
+/* Mobile Gamepad - T-Shape with Sliding Gesture */
 .mobile-gamepad {
     display: none;
     width: 100%;
@@ -610,7 +612,7 @@ button.active {
     min-height: 130px;
 }
 
-/* Gesture D-Pad Area */
+/* T-Shape D-Pad with Sliding Zones */
 .gesture-dpad-area {
     grid-column: 1;
     grid-row: 1;
@@ -619,103 +621,86 @@ button.active {
     align-items: center;
 }
 
-.gesture-dpad {
+.t-shape-dpad {
     position: relative;
-    width: 140px;
-    height: 140px;
+    width: 160px;
+    height: 120px;
     background-color: #222;
-    border-radius: 20px;
-    border: 2px solid #444;
-}
-
-.dpad-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 50px;
-    height: 50px;
-    background-color: #333;
     border-radius: 12px;
-    border: 2px solid #555;
-    z-index: 2;
+    border: 2px solid #444;
+    overflow: hidden;
 }
 
-/* Direction Zones - Triangles */
-.dpad-zone {
+/* Zone Areas (for visual layout only) */
+.zone-visual {
     position: absolute;
-    background-color: rgba(255, 255, 255, 0.05);
-    cursor: pointer;
-    transition: background-color 0.1s;
+    background-color: #333;
+    border: 2px solid #555;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none; /* Don't interfere with touch events */
     z-index: 1;
 }
 
-.dpad-zone.active {
-    background-color: rgba(255, 204, 0, 0.4);
+.zone-visual .arrow {
+    font-size: 24px;
+    color: #ddd;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
 }
 
-/* Up Zone */
-.up-zone {
+/* Up Zone Visual */
+.up-zone-visual {
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 40px solid transparent;
-    border-right: 40px solid transparent;
-    border-bottom: 40px solid rgba(255, 255, 255, 0.05);
+    width: 80px;
+    height: 50px;
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
 }
 
-.up-zone.active {
-    border-bottom-color: rgba(255, 204, 0, 0.4);
-}
-
-/* Down Zone */
-.down-zone {
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 40px solid transparent;
-    border-right: 40px solid transparent;
-    border-top: 40px solid rgba(255, 255, 255, 0.05);
-}
-
-.down-zone.active {
-    border-top-color: rgba(255, 204, 0, 0.4);
-}
-
-/* Left Zone */
-.left-zone {
+/* Left Zone Visual */
+.left-zone-visual {
+    top: 50px;
     left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 40px solid transparent;
-    border-bottom: 40px solid transparent;
-    border-right: 40px solid rgba(255, 255, 255, 0.05);
+    width: 40px;
+    height: 70px;
+    border-radius: 0 0 0 8px;
+    border-right: none;
 }
 
-.left-zone.active {
-    border-right-color: rgba(255, 204, 0, 0.4);
+/* Down Zone Visual */
+.down-zone-visual {
+    top: 50px;
+    left: 40px;
+    width: 80px;
+    height: 70px;
+    border-radius: 0;
+    border-top: none;
+    border-left: none;
+    border-right: none;
 }
 
-/* Right Zone */
-.right-zone {
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 40px solid transparent;
-    border-bottom: 40px solid transparent;
-    border-left: 40px solid rgba(255, 255, 255, 0.05);
+/* Right Zone Visual */
+.right-zone-visual {
+    top: 50px;
+    left: 120px;
+    width: 40px;
+    height: 70px;
+    border-radius: 0 0 8px 0;
+    border-left: none;
 }
 
-.right-zone.active {
-    border-left-color: rgba(255, 204, 0, 0.4);
+/* Active highlight overlay */
+.active-highlight {
+    position: absolute;
+    background-color: rgba(255, 204, 0, 0.4);
+    border: 2px solid rgba(255, 153, 0, 0.6);
+    z-index: 2;
+    pointer-events: none;
+    transition: all 0.1s;
 }
 
 /* Fire Button */
@@ -792,89 +777,5 @@ button.active {
     .mobile-gamepad {
         display: block;
         order: 3;
-    }
-}
-
-/* Responsive adjustments */
-@media screen and (max-width: 480px) {
-    .gesture-dpad {
-        width: 120px;
-        height: 120px;
-    }
-    
-    .up-zone, .down-zone {
-        border-left: 35px solid transparent;
-        border-right: 35px solid transparent;
-    }
-    
-    .up-zone {
-        border-bottom: 35px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .down-zone {
-        border-top: 35px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .left-zone, .right-zone {
-        border-top: 35px solid transparent;
-        border-bottom: 35px solid transparent;
-    }
-    
-    .left-zone {
-        border-right: 35px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .right-zone {
-        border-left: 35px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .dpad-center {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .fire-btn {
-        width: 65px;
-        height: 65px;
-        font-size: 14px;
-    }
-}
-
-/* Landscape mode */
-@media screen and (max-width: 768px) and (orientation: landscape) {
-    .gesture-dpad {
-        width: 110px;
-        height: 110px;
-    }
-    
-    .up-zone, .down-zone {
-        border-left: 30px solid transparent;
-        border-right: 30px solid transparent;
-    }
-    
-    .up-zone {
-        border-bottom: 30px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .down-zone {
-        border-top: 30px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .left-zone, .right-zone {
-        border-top: 30px solid transparent;
-        border-bottom: 30px solid transparent;
-    }
-    
-    .left-zone {
-        border-right: 30px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .right-zone {
-        border-left: 30px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .dpad-center {
-        width: 35px;
-        height: 35px;
     }
 }

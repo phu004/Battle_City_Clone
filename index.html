@@ -31,14 +31,23 @@
 
             <div class="mobile-gamepad" id="mobileGamepad">
                 <div class="gamepad-container">
-                    <!-- Left side: Gesture D-Pad -->
+                    <!-- Left side: Inverted T-Shaped D-Pad with Sliding -->
                     <div class="gesture-dpad-area">
-                        <div class="gesture-dpad" id="gestureDpad">
-                            <div class="dpad-center"></div>
-                            <div class="dpad-zone up-zone" data-direction="UP"></div>
-                            <div class="dpad-zone down-zone" data-direction="DOWN"></div>
-                            <div class="dpad-zone left-zone" data-direction="LEFT"></div>
-                            <div class="dpad-zone right-zone" data-direction="RIGHT"></div>
+                        <div class="t-shape-dpad" id="gestureDpad">
+                            <!-- Visual zones (non-interactive, just for display) -->
+                            <div class="zone-visual up-zone-visual">
+                                <span class="arrow">↑</span>
+                            </div>
+                            <div class="zone-visual left-zone-visual">
+                                <span class="arrow">←</span>
+                            </div>
+                            <div class="zone-visual down-zone-visual">
+                                <span class="arrow">↓</span>
+                            </div>
+                            <div class="zone-visual right-zone-visual">
+                                <span class="arrow">→</span>
+                            </div>
+                            <!-- Active highlight will be created by JavaScript -->
                         </div>
                     </div>
 
