@@ -16,7 +16,6 @@ export class MobileGamepad {
         this.PAUSE_COOLDOWN = 300; // ms
         
         this.init();
-        console.log("sdf")
     }
     
     init() {

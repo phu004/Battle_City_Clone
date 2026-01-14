@@ -457,4 +457,46 @@ export function drawBase(ctx, base, zoomLevel, CELL_SIZE) {
 }
 
 
+export function drawLoadingScreen(message = "Loading...", progress = 0, ctx, gameState, canvas) {
+    // Only draw if we're in loading state
+    if (gameState !== 'loading') return;
+    
+    ctx.save();
+    
+    // Clear canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw loading message
+    ctx.fillStyle = '#FFF';
+    ctx.font = `20px Arial`;
+    ctx.fillText(message, canvas.width / 2-60, canvas.height / 2);
+    
+    // Draw progress bar background
+    const barWidth = canvas.width * 0.6;
+    const barHeight = 20;
+    const barX = (canvas.width - barWidth) / 2;
+    const barY = canvas.height / 2 + 40;
+    
+    ctx.fillStyle = '#333';
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+    
+    // Draw progress bar fill
+    ctx.fillStyle = '#00FF00';
+    const fillWidth = (barWidth * progress) / 100;
+    ctx.fillRect(barX, barY, fillWidth, barHeight);
+    
+    // Draw progress percentage
+    ctx.fillStyle = '#FFF';
+    ctx.font = `16px Arial`;
+    ctx.fillText(`${progress}%`, canvas.width / 2, barY + barHeight + 20);
+    
+    // Draw loading tips
+    ctx.fillStyle = '#888';
+    ctx.font = `14px Arial`;
+    ctx.fillText('Please wait while assets are loading...', canvas.width / 2, canvas.height - 50);
+    
+    ctx.restore();
+}
+
 

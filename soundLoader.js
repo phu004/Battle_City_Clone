@@ -1,7 +1,9 @@
-export async function initializeSound(sound) {
+import {drawLoadingScreen } from  './renderer.js';
+
+export async function initializeSound(sound, ctx, gameState, canvas) {
     // Define sounds in exact order
     const soundConfigs = [
-        { url: "sound/shoot.wav", volume: 0.65 },
+        { url: "sound/shoot.wav", volume: 0.65 },   
         { url: "sound/bulletHitWall.wav", volume: 1 },
         { url: "sound/destoryWall.wav", volume: 1 },
         { url: "sound/enemyExplode.wav", volume: 1 },
@@ -46,7 +48,7 @@ export async function initializeSound(sound) {
             audio.load(); // Start loading
         });
         
-        console.log(`Loaded sound ${i+1}/${soundConfigs.length}`);
+        drawLoadingScreen("Loading sounds...", Math.floor(20 + 60 * i/soundConfigs.length), ctx, gameState, canvas);
     }
     
     return sound;

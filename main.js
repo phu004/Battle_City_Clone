@@ -1,4 +1,4 @@
-import { drawBackground, drawBrickWalls, drawSteelWalls, drawFuturePosition, drawPredictionLineOfSight, drawPerpendicularBulletWarnings, drawBushes, drawTank, drawBullets, drawBase, drawRivers, loadEntitySprites} from './renderer.js';
+import { drawBackground, drawBrickWalls, drawSteelWalls, drawFuturePosition, drawPredictionLineOfSight, drawPerpendicularBulletWarnings, drawBushes, drawTank, drawBullets, drawBase, drawRivers, loadEntitySprites, drawLoadingScreen} from './renderer.js';
 import { updatePlayerDisplay, updateCanvasSize, updateEnemyDisplay, updateWallCount, updateAIDisplayInfo } from './gameUI.js';
 import { initializeMap } from './mapLoader.js';
 import { checkBulletBrickCollisionPrecise, checkPhysicalCollision, checkBulletSteelCollision, checkTankVisualCollision, wouldCollideWithRiver, checkAllPowerUpCollisions, wouldCollideWithSteelWalls, countCollisionWithRiver, countCollisionWithSteelWalls } from './collisionDetection.js';
@@ -54,6 +54,12 @@ const PERPENDICULAR_BULLET_RISK_DISTANCE = 4; // Distance to consider perpendicu
 // ========== GAME STATE ==========
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+updateCanvasSize(BASE_SIZE, 3, canvas);
+let gameState = "loading";
+drawLoadingScreen("Initializing...", 0, ctx, gameState, canvas);
+let titleY = canvas.height; // Start from bottom
+
 
 const powerUp = new PowerUp();
 const frozeTime = { time: 0 };
@@ -196,8 +202,8 @@ let seekPowerUpDirectionChangeCountDown = 0;
 //sound
 let sound = [];
 
-let gameState = 'title'; // 'title', 'ready', 'playing'
-let titleY = canvas.height; // Start from bottom
+
+
 
 let levelInfo
 
@@ -217,16 +223,6 @@ function canShootMultipleBullets(tank) {
     return tank.powerLevel >= 3;
 }
 
-
-// Upgrade tank power level
-function upgradeTankPower(tank) {
-    if (tank.powerLevel < 5) {
-        tank.powerLevel++;
-
-        return true;
-    }
-    return false;
-}
 
 // Handle tank hit (for power level 5 with extra life)
 function handleTankHit(tank) {
@@ -3502,8 +3498,7 @@ function updateTitleAnimation() {
 function startGame() {
     if (gameState === 'ready') {
         gameState = 'playing';
-        // Start game sounds if needed
-       
+        frameCount = -180;
     }
 }
 
@@ -3543,50 +3538,36 @@ export function drawTitleScreen() {
 }
 
 
-function drawLoadingScreen(message = "Loading...", progress = 0) {
-    // Only draw if we're in loading state
-    if (gameState !== 'loading') return;
-    
+
+
+function drawLevelTransition(){
     ctx.save();
-    
-    // Clear canvas
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw loading message
-    ctx.fillStyle = '#FFF';
-    ctx.font = `20px Arial`;
-    ctx.fillText(message, canvas.width / 2, canvas.height / 2);
-    
-    // Draw progress bar background
-    const barWidth = canvas.width * 0.6;
-    const barHeight = 20;
-    const barX = (canvas.width - barWidth) / 2;
-    const barY = canvas.height / 2 + 40;
-    
-    ctx.fillStyle = '#333';
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-    
-    // Draw progress bar fill
-    ctx.fillStyle = '#00FF00';
-    const fillWidth = (barWidth * progress) / 100;
-    ctx.fillRect(barX, barY, fillWidth, barHeight);
-    
-    // Draw progress percentage
-    ctx.fillStyle = '#FFF';
-    ctx.font = `16px Arial`;
-    ctx.fillText(`${progress}%`, canvas.width / 2, barY + barHeight + 20);
-    
-    // Draw loading tips
-    ctx.fillStyle = '#888';
-    ctx.font = `14px Arial`;
-    ctx.fillText('Please wait while assets are loading...', canvas.width / 2, canvas.height - 50);
-    
+    ctx.fillStyle = '#808080'; // Gray
+    if(frameCount < -149){
+        let levelRectHeight = canvas.height/2 * (1 - (-150 - frameCount)/30);
+        ctx.fillRect(0, 0, canvas.width, levelRectHeight);
+        let yPox = canvas.height;
+        ctx.fillRect(0, yPox - levelRectHeight, canvas.width, levelRectHeight);
+    }
+
+    if(frameCount >= -149){
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000000';
+        ctx.font = `25px Arial`;
+        ctx.fillText('Stage 1', canvas.width / 2 -25, canvas.height/2);
+    }
+
     ctx.restore();
-    
-    // Force immediate redraw (important for loading screen)
-    // This ensures the loading screen updates even without requestAnimationFrame
-    // ctx.commit(); // If using OffscreenCanvas, otherwise not needed
+}
+
+function drawLevelTransitionClosing(){
+    ctx.save();
+    let levelRectHeight = canvas.height/2 * ((30 - frameCount)/30);
+    ctx.fillStyle = '#808080'; // Gray
+    ctx.fillRect(0, 0, canvas.width, levelRectHeight);
+
+    ctx.fillRect(0, canvas.height - levelRectHeight, canvas.width, levelRectHeight);
+    ctx.restore();
 }
 
 
@@ -3603,6 +3584,13 @@ function gameLoop() {
         drawTitleScreen(ctx, canvas, titleY, zoomLevel);
         
         // Skip game logic during title screen
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    if(frameCount < 0){
+        drawLevelTransition();
+        frameCount++;
         requestAnimationFrame(gameLoop);
         return;
     }
@@ -3643,6 +3631,10 @@ function gameLoop() {
         drawPerpendicularBulletWarnings(ctx, zoomLevel, CELL_SIZE, BULLET_SIZE, showPredictions, perpendicularBullets);
     }
 
+    if(frameCount >= 0 && frameCount  <= 30){
+        drawLevelTransitionClosing();
+    }
+
     frameCount++;
     if(frameCount == 1){
         sound[12].play();
@@ -3664,21 +3656,19 @@ async function init() {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    updateCanvasSize(BASE_SIZE, zoomLevel, canvas);
-    gameState = "loading";
-    drawLoadingScreen("Initializing...", 0);
-    drawLoadingScreen("Loading map...", 20);
-    await initializeMap(4, brickWalls, steelWalls, rivers, bushes); // UPDATED: Pass rivers and bushes arrays
+   
+    drawLoadingScreen("Loading map...", 10, ctx, gameState, canvas);
+    await initializeMap(4, brickWalls, steelWalls, rivers, bushes, levelInfo); // UPDATED: Pass rivers and bushes arrays
     
-    drawLoadingScreen("Loading sounds...", 50);
-    await initializeSound(sound);
+   
+    await initializeSound(sound, ctx, gameState, canvas);
     
     powerUp.setSound(sound);
-    drawLoadingScreen("Loading tank sprites...", 60);
+    drawLoadingScreen("Loading tank sprites...", 80, ctx, gameState, canvas);
     await loadEntitySprites();
-    drawLoadingScreen("Loading particle effects...", 80);
+    drawLoadingScreen("Loading particle effects...", 90, ctx, gameState, canvas);
     await loadParticleSprites()
-    drawLoadingScreen("Ready!", 100);
+    drawLoadingScreen("Ready!", 100, ctx, gameState, canvas);
     bricksDestroyed = 0;
     updateWallCount(brickWalls, steelWalls, bricksDestroyed);
     updateNextSpawnPosition();
@@ -3702,7 +3692,5 @@ async function init() {
 
     requestAnimationFrame(gameLoop);
 }
-
-
 
 window.addEventListener('load', () => init());
