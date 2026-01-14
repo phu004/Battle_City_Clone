@@ -457,3 +457,4 @@ export function drawBase(ctx, base, zoomLevel, CELL_SIZE) {
 }
 
 
+

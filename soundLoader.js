@@ -13,6 +13,7 @@ export async function initializeSound(sound) {
         { url: "sound/pause.wav", volume: 1 },
         { url: "sound/playerMoveSound.wav", volume:0.65 },
         { url: "sound/enemyMoveSound.wav", volume: 0.65 },
+        { url: "sound/gameStart.mp3", volume: 1}
     ];
 
     // Initialize array with correct length to preserve indexes

@@ -1,4 +1,4 @@
-import { drawBackground, drawBrickWalls, drawSteelWalls, drawFuturePosition, drawPredictionLineOfSight, drawPerpendicularBulletWarnings, drawBushes, drawTank, drawBullets, drawBase, drawRivers, loadEntitySprites } from './renderer.js';
+import { drawBackground, drawBrickWalls, drawSteelWalls, drawFuturePosition, drawPredictionLineOfSight, drawPerpendicularBulletWarnings, drawBushes, drawTank, drawBullets, drawBase, drawRivers, loadEntitySprites} from './renderer.js';
 import { updatePlayerDisplay, updateCanvasSize, updateEnemyDisplay, updateWallCount, updateAIDisplayInfo } from './gameUI.js';
 import { initializeMap } from './mapLoader.js';
 import { checkBulletBrickCollisionPrecise, checkPhysicalCollision, checkBulletSteelCollision, checkTankVisualCollision, wouldCollideWithRiver, checkAllPowerUpCollisions, wouldCollideWithSteelWalls, countCollisionWithRiver, countCollisionWithSteelWalls } from './collisionDetection.js';
@@ -54,7 +54,6 @@ const PERPENDICULAR_BULLET_RISK_DISTANCE = 4; // Distance to consider perpendicu
 // ========== GAME STATE ==========
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const ZOOM_LEVELS = [1, 2, 3];
 
 const powerUp = new PowerUp();
 const frozeTime = { time: 0 };
@@ -197,7 +196,10 @@ let seekPowerUpDirectionChangeCountDown = 0;
 //sound
 let sound = [];
 
-// ========== POWER LEVEL FUNCTIONS ==========
+let gameState = 'title'; // 'title', 'ready', 'playing'
+let titleY = canvas.height; // Start from bottom
+
+let levelInfo
 
 
 // Get bullet speed based on power level
@@ -3447,15 +3449,6 @@ function firePlayerBullet(playerType) {
 }
 
 // ========== UI CONTROL FUNCTIONS ==========
-function setZoomLevel(level) {
-    if (ZOOM_LEVELS.includes(level)) {
-        zoomLevel = level;
-        updateCanvasSize(BASE_SIZE, zoomLevel, canvas);
-
-        document.querySelectorAll('.zoom-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`zoom${level}x`).classList.add('active');
-    }
-}
 
 function togglePause() {
     if (!gamePaused) {
@@ -3499,11 +3492,124 @@ function toggleBoundingBox() {
     button.classList.toggle('active', showPredictions);
 }
 
+function updateTitleAnimation() {
+    // Move title up until it reaches center
+    if (titleY > canvas.height / 3) {
+        titleY -= 5; // Adjust speed as needed
+    }
+}
+
+function startGame() {
+    if (gameState === 'ready') {
+        gameState = 'playing';
+        // Start game sounds if needed
+       
+    }
+}
+
+export function drawTitleScreen() {
+    // Clear canvas with black background
+    ctx.save();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw the rolling title
+    ctx.fillStyle = '#FFD700'; // Gold color
+    ctx.font = `bold ${24 * zoomLevel}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Draw "BATTLE CITY" with shadow for better visibility
+    ctx.shadowColor = '#FF4500'; // Orange-red shadow
+    ctx.shadowBlur = 10;
+    ctx.fillText('BATTLE CITY', canvas.width / 2, titleY);
+    ctx.shadowBlur = 0; // Reset shadow
+    
+    // If title has reached center, show start prompt
+    if (titleY <= canvas.height / 3) {
+        gameState = 'ready';
+        
+        // Draw start prompt
+        ctx.fillStyle = '#FFF';
+        ctx.font = `24px Arial`;
+        
+        ctx.fillText('CLICK OR TAP HERE TO START', canvas.width / 2, canvas.height / 2 + 80);
+        if(window.innerWidth >=768){
+            ctx.font = `20px Arial`;
+        ctx.fillText("Press 'L' key to shoot, arrow keys to move around", canvas.width / 2, canvas.height / 2 + 130);
+        }
+    }
+    ctx.restore();
+}
+
+
+function drawLoadingScreen(message = "Loading...", progress = 0) {
+    // Only draw if we're in loading state
+    if (gameState !== 'loading') return;
+    
+    ctx.save();
+    
+    // Clear canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw title
+    ctx.fillStyle = '#FFD700';
+    ctx.font = `bold ${32 * zoomLevel}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('BATTLE CITY', canvas.width / 2, canvas.height / 3);
+    
+    // Draw loading message
+    ctx.fillStyle = '#FFF';
+    ctx.font = `20px Arial`;
+    ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+    
+    // Draw progress bar background
+    const barWidth = canvas.width * 0.6;
+    const barHeight = 20;
+    const barX = (canvas.width - barWidth) / 2;
+    const barY = canvas.height / 2 + 40;
+    
+    ctx.fillStyle = '#333';
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+    
+    // Draw progress bar fill
+    ctx.fillStyle = '#00FF00';
+    const fillWidth = (barWidth * progress) / 100;
+    ctx.fillRect(barX, barY, fillWidth, barHeight);
+    
+    // Draw progress percentage
+    ctx.fillStyle = '#FFF';
+    ctx.font = `16px Arial`;
+    ctx.fillText(`${progress}%`, canvas.width / 2, barY + barHeight + 20);
+    
+    // Draw loading tips
+    ctx.fillStyle = '#888';
+    ctx.font = `14px Arial`;
+    ctx.fillText('Please wait while assets are loading...', canvas.width / 2, canvas.height - 50);
+    
+    ctx.restore();
+    
+    // Force immediate redraw (important for loading screen)
+    // This ensures the loading screen updates even without requestAnimationFrame
+    // ctx.commit(); // If using OffscreenCanvas, otherwise not needed
+}
 
 
 // ========== MAIN GAME LOOP ==========
 function gameLoop() {
     if (gamePaused) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    // Handle title/start screen
+    if (gameState !== 'playing') {
+        updateTitleAnimation();
+        drawTitleScreen(ctx, canvas, titleY, zoomLevel);
+        
+        // Skip game logic during title screen
         requestAnimationFrame(gameLoop);
         return;
     }
@@ -3545,6 +3651,9 @@ function gameLoop() {
     }
 
     frameCount++;
+    if(frameCount == 1){
+        sound[12].play();
+    }
     if (frameCount == 30)
         if (!aiEnabled)
             toggleAI();
@@ -3563,11 +3672,20 @@ async function init() {
     window.addEventListener('keyup', handleKeyUp);
 
     updateCanvasSize(BASE_SIZE, zoomLevel, canvas);
+    gameState = "loading";
+    drawLoadingScreen("Initializing...", 0);
+    drawLoadingScreen("Loading map...", 20);
     await initializeMap(4, brickWalls, steelWalls, rivers, bushes); // UPDATED: Pass rivers and bushes arrays
+    
+    drawLoadingScreen("Loading sounds...", 50);
     await initializeSound(sound);
+    
     powerUp.setSound(sound);
+    drawLoadingScreen("Loading tank sprites...", 60);
     await loadEntitySprites();
+    drawLoadingScreen("Loading particle effects...", 80);
     await loadParticleSprites()
+    drawLoadingScreen("Ready!", 100);
     bricksDestroyed = 0;
     updateWallCount(brickWalls, steelWalls, bricksDestroyed);
     updateNextSpawnPosition();
@@ -3584,8 +3702,14 @@ async function init() {
             e.preventDefault();
         });
     });
+    canvas.addEventListener('click', startGame);
+    gameState = 'title';
+    titleY = canvas.height;
+    
 
     requestAnimationFrame(gameLoop);
 }
+
+
 
 window.addEventListener('load', () => init());
