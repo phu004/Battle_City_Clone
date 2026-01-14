@@ -3553,13 +3553,6 @@ function drawLoadingScreen(message = "Loading...", progress = 0) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw title
-    ctx.fillStyle = '#FFD700';
-    ctx.font = `bold ${32 * zoomLevel}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('BATTLE CITY', canvas.width / 2, canvas.height / 3);
-    
     // Draw loading message
     ctx.fillStyle = '#FFF';
     ctx.font = `20px Arial`;
