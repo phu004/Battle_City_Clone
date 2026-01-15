@@ -115,7 +115,6 @@ export class MobileGamepad {
     
     setupPauseButton() {
         this.pauseBtn.addEventListener('click', (e) => {
-            console.log("sdsfdfs")
             e.preventDefault();
             this.pressPause();
             this.pauseBtn.classList.add('active');

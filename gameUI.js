@@ -18,7 +18,7 @@ export function updatePlayerDisplay(bulletCollisionRisk,
                                     shouldPredictiveShoot,
 ) {
 
-    document.getElementById('AILives').textContent = AILives;
+    /*document.getElementById('AILives').textContent = AILives;
     document.getElementById('tankPosition').textContent = `${AITank.x.toFixed(1)},${AITank.y.toFixed(1)}`;
     document.getElementById('boundingBox').textContent = `${AITank.bx},${AITank.by}`;
  
@@ -73,7 +73,7 @@ export function updatePlayerDisplay(bulletCollisionRisk,
             perpendicularBulletRisk === "Medium" ? '#ff9900' : '#44ff44';
 
     document.getElementById('nextToEnemyStatus').textContent = nextToEnemy ? "Yes" : "No";
-    document.getElementById('nextToEnemyStatus').style.color = nextToEnemy ? '#ff4444' : '#44ff44';
+    document.getElementById('nextToEnemyStatus').style.color = nextToEnemy ? '#ff4444' : '#44ff44';*/
 }
 
 
@@ -83,7 +83,7 @@ export function updateCanvasSize(BASE_SIZE, zoomLevel, canvas) {
     canvas.height = size;
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
-    document.getElementById('currentZoom').textContent = `${zoomLevel}x`;
+    //document.getElementById('currentZoom').textContent = `${zoomLevel}x`;
 }
 
 export function updateEnemyDisplay(enemyTanks, MAX_ENEMIES, enemySpawnCooldown) {
@@ -97,8 +97,8 @@ export function updateWallCount(brickWalls, steelWalls, bricksDestroyed) {
     const aliveBrickWalls = brickWalls.filter(wall => wall.isAlive()).length;
     const aliveSteelWalls = steelWalls.filter(steel => steel.isAlive).length;
 
-    document.getElementById('wallCount').textContent = aliveBrickWalls;
-    document.getElementById('steelWallCount').textContent = aliveSteelWalls;
+    //document.getElementById('wallCount').textContent = aliveBrickWalls;
+    //document.getElementById('steelWallCount').textContent = aliveSteelWalls;
 
     // Calculate remaining bits in brick walls
     let remainingBits = 0;
@@ -107,15 +107,15 @@ export function updateWallCount(brickWalls, steelWalls, bricksDestroyed) {
             remainingBits += wall.getRemainingBits();
         }
     }
-    document.getElementById('brickBitsLeft').textContent = remainingBits;
-    document.getElementById('bricksDestroyed').textContent = bricksDestroyed;
+    //document.getElementById('brickBitsLeft').textContent = remainingBits;
+    //document.getElementById('bricksDestroyed').textContent = bricksDestroyed;
 }
 
 export function updateAIDisplay(enemiesKilled, bulletsDodged, bulletsDestroyed, bricksDestroyed) {
-    document.getElementById('enemiesKilled').textContent = enemiesKilled;
-    document.getElementById('bulletsDodged').textContent = bulletsDodged;
-    document.getElementById('bulletsDestroyed').textContent = bulletsDestroyed;
-    document.getElementById('bricksDestroyed').textContent = bricksDestroyed;
+    //document.getElementById('enemiesKilled').textContent = enemiesKilled;
+    //document.getElementById('bulletsDodged').textContent = bulletsDodged;
+    //document.getElementById('bulletsDestroyed').textContent = bulletsDestroyed;
+    //document.getElementById('bricksDestroyed').textContent = bricksDestroyed;
    
 }
 
@@ -127,7 +127,7 @@ export function updateAIDisplayInfo(aiEnabled,
                                 aiStrategy,
                                 aiShooting,
 ) {
-    document.getElementById('aiStatus').textContent = aiEnabled ? "Active" : "Off";
+    /*document.getElementById('aiStatus').textContent = aiEnabled ? "Active" : "Off";
     document.getElementById('aiStatus').style.color = aiEnabled ? '#00ff00' : '#ff4444';
     document.getElementById('aiTarget').textContent = aiTargetEnemy ? `(${aiTargetEnemy.x.toFixed(1)}, ${aiTargetEnemy.y.toFixed(1)})` : "None";
     document.getElementById('aiAction').textContent = aiAction;
@@ -148,5 +148,5 @@ export function updateAIDisplayInfo(aiEnabled,
     } else {
         indicator.classList.add('status-ready');
         statusText.textContent = 'AI: Ready to enable';
-    }
+    }*/
 }

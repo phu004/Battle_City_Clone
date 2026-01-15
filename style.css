@@ -878,3 +878,134 @@ button.active {
         height: 35px;
     }
 }
+
+/* Game Info Styles - Responsive version */
+.game-info {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    width: 140px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Desktop layout (default) - vertical stack */
+.player-info, .enemy-info {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #333;
+}
+
+.player-info:last-child, .enemy-info:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.info-title {
+    color: #ff9900;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+    font-size: 11px;
+}
+
+.info-row:last-child {
+    margin-bottom: 0;
+}
+
+.info-label {
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+}
+
+.info-value {
+    color: #fff;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    text-align: right;
+    min-width: 40px;
+}
+
+/* Color coding */
+#p1Lives { color: #00ccff; }
+#p2Lives { color: #ff4444; }
+#p1Score, #p2Score { color: #00ff00; }
+#tankRemains { color: #ff4444; }
+
+/* Keep existing right-controls styling */
+.right-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 140px;
+}
+
+/* Mobile responsive layout */
+@media (max-width: 768px) {
+    .game-info {
+        flex-direction: row; /* Horizontal layout on mobile */
+        justify-content: space-between;
+        width: 100%;
+        max-width: 300px;
+        margin: 10px auto 0;
+    }
+    
+    .player-info, .enemy-info {
+        flex: 1;
+        padding: 0 8px;
+        border-bottom: none;
+        border-right: 1px solid #333;
+    }
+    
+    .player-info:last-child, .enemy-info:last-child {
+        border-right: none;
+    }
+    
+    .info-title {
+        font-size: 11px;
+        margin-bottom: 2px;
+    }
+    
+    .info-row {
+        font-size: 10px;
+    }
+    
+    .info-value {
+        min-width: 35px;
+    }
+}
+
+/* For very small mobile screens */
+@media (max-width: 480px) {
+    .game-info {
+        padding: 6px;
+        gap: 4px;
+    }
+    
+    .player-info, .enemy-info {
+        padding: 0 4px;
+    }
+    
+    .info-title {
+        font-size: 10px;
+    }
+    
+    .info-row {
+        font-size: 9px;
+    }
+    
+    .info-value {
+        min-width: 30px;
+    }
+}
+

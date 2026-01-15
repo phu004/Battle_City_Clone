@@ -87,7 +87,6 @@ export class PowerUp {
         this.animationFrame = 0;
         this.pulseScale = 1;
 
-        console.log(`PowerUp spawned at (${this.x}, ${this.y}) - Type: ${this.type}`);
         return true;
     }
 
@@ -95,7 +94,6 @@ export class PowerUp {
     remove() {
         this.isAlive = false;
         this.type = null;
-        console.log(`PowerUp removed from (${this.x}, ${this.y})`);
     }
 
     // For spawning a new power-up when one already exists
@@ -152,6 +150,8 @@ export class PowerUp {
     // Called when tank collects the power-up
     consumed(tank, particleEffects, enemyTanks, frozeTime, brickWalls, steelWalls) {
         if (!this.isAlive) return null;
+
+        tank.score+=500;
 
         if (this.type == "helmet")
             tank.invulnerableTimer = 1000 + Math.random() * 500;

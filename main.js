@@ -1,6 +1,6 @@
-import { drawBackground, drawBrickWalls, drawSteelWalls, drawFuturePosition, drawPredictionLineOfSight, drawPerpendicularBulletWarnings, drawBushes, drawTank, drawBullets, drawBase, drawRivers, loadEntitySprites, drawLoadingScreen} from './renderer.js';
+import { drawBackground, drawBrickWalls, drawSteelWalls, drawFuturePosition, drawPredictionLineOfSight, drawPerpendicularBulletWarnings, drawBushes, drawTank, drawBullets, drawBase, drawRivers, loadEntitySprites, drawLoadingScreen } from './renderer.js';
 import { updatePlayerDisplay, updateCanvasSize, updateEnemyDisplay, updateWallCount, updateAIDisplayInfo } from './gameUI.js';
-import { initializeMap } from './mapLoader.js';
+import { initializeMap, loadAllLevelImages } from './mapLoader.js';
 import { checkBulletBrickCollisionPrecise, checkPhysicalCollision, checkBulletSteelCollision, checkTankVisualCollision, wouldCollideWithRiver, checkAllPowerUpCollisions, wouldCollideWithSteelWalls, countCollisionWithRiver, countCollisionWithSteelWalls } from './collisionDetection.js';
 import { createBulletExplosion, updateParticleEffects, drawParticleEffects, loadParticleSprites, createBigExplosion, createSpawnAnimation } from './particles.js';
 import { isBulletPerpendicularToMovement, checkPerpendicularPathIntersection, willPathIntersectBullet, willWalkIntoPerpendicularBullet, isNextToEnemy, getShootingDirectionForAdjacentEnemy } from './mapAwareness.js';
@@ -24,8 +24,6 @@ const FAST_BULLET_COOLDOWN = 4; // NEW: For power level 2+
 const BULLET_OFFSET = 0.55; // How far from tank edge bullets spawn
 const MAX_BULLET = 2;
 
-const MAX_ENEMIES = 6;
-const ENEMY_SPAWN_COOLDOWN = 200;
 const INVULNERABLE_COUNTDOWN = 200;
 
 // AI Constants - Enhanced for bullet avoidance
@@ -146,7 +144,8 @@ let AITank = {
     bulletCooldown: 0,
     firingDirection: null,
     invulnerableTimer: INVULNERABLE_COUNTDOWN,
-    lives: 3
+    lives: 3,
+    score: 0
 
 };
 
@@ -155,7 +154,7 @@ let humanTank = {
     x: 8, y: 24, direction: 0,
     bx: 8, by: 24,
     moving: false,
-    powerLevel: 5, // NEW: Power level (1-5)
+    powerLevel: 1, // NEW: Power level (1-5)
     isAlive: false,
     respawnTimer: 52, canCollide: true,
     canShoot: true,
@@ -165,7 +164,8 @@ let humanTank = {
     bulletCooldown: 0,
     firingDirection: null,
     invulnerableTimer: INVULNERABLE_COUNTDOWN,
-    lives: 3
+    lives: 3,
+    score: 0
 };
 
 // Enemy tanks
@@ -205,7 +205,10 @@ let sound = [];
 
 
 
-let levelInfo
+let level = { levelParameter: null };
+let levelNum = 1;
+let stageClear = false;
+
 
 
 // Get bullet speed based on power level
@@ -890,7 +893,7 @@ function checkBulletBrickCollision(bullet) {
         }
 
         updateWallCount(brickWalls, steelWalls, bricksDestroyed);
-        document.getElementById('lastHitSide').textContent = lastHitSide;
+        //document.getElementById('lastHitSide').textContent = lastHitSide;
 
         return true;
     }
@@ -1018,11 +1021,10 @@ function getNextSpawnPositionWithoutUpdate() {
 function updateNextSpawnPosition() {
     const nextPosIndex = spawnPositionIndex % SPAWN_POSITIONS.length;
     const nextPosition = SPAWN_POSITIONS[nextPosIndex];
-    document.getElementById('nextSpawnPos').textContent = nextPosition.name;
+    //document.getElementById('nextSpawnPos').textContent = nextPosition.name;
 }
 
 function spawnEnemy() {
-    if (enemyTanks.length >= MAX_ENEMIES) return;
 
     const position = getNextSpawnPosition();
     if (!position) return;
@@ -1030,9 +1032,11 @@ function spawnEnemy() {
     let direction = Math.floor(Math.random() * 4);
 
     totalEnemiesSpawned++;
-    let hasPowerUp = (totalEnemiesSpawned % 4 == 0) && (totalEnemiesSpawned % 20 != 0)
+    let hasPowerUp = (totalEnemiesSpawned % 6 == 0) && (totalEnemiesSpawned % level.levelParameter.enemyCount != 0)
 
-    let enemyType = "enemy" + (Math.floor(Math.random() * 4) + 1);
+    let tankTypeNumber = getWeightedRandom(level.levelParameter.tankProbabilities);
+
+    let enemyType = "enemy" + tankTypeNumber;
 
     const enemy = {
         x: position.x, y: position.y, direction,
@@ -1040,7 +1044,7 @@ function spawnEnemy() {
         moving: true,
         color: '#CC4444', turretColor: '#992222', barrelColor: '#8B4513',
         decisionTimer: Math.floor(Math.random() * 50) + 30,
-        fireTimer: Math.floor(Math.random() * 100) + 50,
+        fireTimer: level.levelParameter.enemyFireRate + 50,
         isAlive: true, canCollide: true,
         lastDirectionChange: 0,
         spawnPositionName: position.name,
@@ -1054,10 +1058,22 @@ function spawnEnemy() {
     };
 
     enemyTanks.push(enemy);
-    updateEnemyDisplay(enemyTanks, MAX_ENEMIES, enemySpawnCooldown);
 }
 
+function getWeightedRandom(probabilities) {
+    const random = Math.random();
+    let cumulative = 0;
 
+    for (let i = 0; i < probabilities.length; i++) {
+        cumulative += probabilities[i];
+        if (random <= cumulative) {
+            return i + 1; // Returns 1, 2, 3, or 4
+        }
+    }
+
+    // Fallback in case of rounding errors
+    return 4;
+}
 
 function respawnPlayer(isAI) {
     if (isAI) {
@@ -1084,9 +1100,9 @@ function respawnPlayer(isAI) {
             // 检查人类玩家是否也死亡
             if (!humanTank.isAlive && humanTank.lives <= 0) {
                 gameOver = true;
-                document.getElementById('aiDebug').textContent = "GAME OVER: All players lost!";
+                //document.getElementById('aiDebug').textContent = "GAME OVER: All players lost!";
             } else {
-                document.getElementById('aiDebug').textContent = "AI Player destroyed! Human player continues...";
+                //document.getElementById('aiDebug').textContent = "AI Player destroyed! Human player continues...";
             }
 
             callUpdatePlayerDisplay();
@@ -1115,9 +1131,9 @@ function respawnPlayer(isAI) {
             // 检查AI玩家是否也死亡
             if (!AITank.isAlive && AITank.lives <= 0) {
                 gameOver = true;
-                document.getElementById('aiDebug').textContent = "GAME OVER: All players lost!";
+                //document.getElementById('aiDebug').textContent = "GAME OVER: All players lost!";
             } else {
-                document.getElementById('aiDebug').textContent = "Human Player destroyed! AI player continues...";
+                //document.getElementById('aiDebug').textContent = "Human Player destroyed! AI player continues...";
             }
         }
     }
@@ -1811,6 +1827,7 @@ function updateAI() {
     }
 
 
+
     if (useSimplePathfindingCountdown > 0)
         useSimplePathfindingCountdown--;
     if (seekPowerUpDirectionChangeCountDown > 0)
@@ -2178,9 +2195,12 @@ function updateAI() {
 
     }
 
+
     // ========== 正常战斗逻辑 ==========
     if (aiShootCooldown === 0) {
         executeCombatLogic();
+
+
     } else {
         maintainCurrentDirection();
     }
@@ -2614,8 +2634,10 @@ function executeCombatLogic() {
 
         // 正常战斗行为
         executeNormalAIBehavior(aiTargetEnemy, distance);
+
     } else {
         exploreWhenNoEnemies();
+
     }
 }
 
@@ -2718,7 +2740,7 @@ function executeNormalAIBehavior(enemy, distance) {
             aiAction = "Aligning to Enemy";
             dangerLevel = "Medium";
 
-            document.getElementById('aiDebug').textContent = `AI: Enemy facing player! Aligning to ${['Up', 'Right', 'Down', 'Left'][alignmentDirection]}`;
+            //document.getElementById('aiDebug').textContent = `AI: Enemy facing player! Aligning to ${['Up', 'Right', 'Down', 'Left'][alignmentDirection]}`;
         } else {
             const shootDirection = getShootingDirectionWhenAligned(enemy);
 
@@ -2747,18 +2769,17 @@ function executeNormalAIBehavior(enemy, distance) {
             }
 
             dangerLevel = "High";
-            document.getElementById('aiDebug').textContent = `AI: Aligned with enemy! Shooting direction: ${['Up', 'Right', 'Down', 'Left'][shootDirection]}`;
+            //document.getElementById('aiDebug').textContent = `AI: Aligned with enemy! Shooting direction: ${['Up', 'Right', 'Down', 'Left'][shootDirection]}`;
         }
     } else {
         aiStrategy = "Normal Chase";
-
         if (canShootEnemyFromCurrentPosition(enemy) && !wouldBulletHitBase(AITank.x, AITank.y, AITank.direction)) {
             firePlayerBullet('ai');
             aiShooting = true;
             aiShootCooldown = AI_SHOOT_COOLDOWN;
             aiShotDirection = AITank.direction;
             aiAction = "Shooting Enemy (In Line)";
-            document.getElementById('aiDebug').textContent = `AI: Enemy in line of sight! Shooting at (${enemy.x.toFixed(1)}, ${enemy.y.toFixed(1)})`;
+            //document.getElementById('aiDebug').textContent = `AI: Enemy in line of sight! Shooting at (${enemy.x.toFixed(1)}, ${enemy.y.toFixed(1)})`;
         }
         else if (frameCount - aiLastUpdate > AI_UPDATE_INTERVAL * 2) {
             aiCurrentPath = findPathToTarget(enemy.x, enemy.y);
@@ -2841,12 +2862,6 @@ function updateTank(tank, isAI = true) {
     if (isAI) {
         if (aiEnabled) {
             updateAI();
-        } else {
-            const maxBullets = canShootMultipleBullets(tank) ? MAX_BULLET : 1;
-            if (fireKeyPressed && tank.isAlive && tank.canShoot &&
-                bullets.filter(b => b.isAITank).length < maxBullets && bulletCooldown === 0) {
-                firePlayerBullet('ai');
-            }
         }
 
         if (keys['w']) moveDirection = 0;
@@ -2971,14 +2986,16 @@ function updateTank(tank, isAI = true) {
 }
 
 function updateEnemyTanks() {
-    if (enemySpawnCooldown == 52 && enemyTanks.length < MAX_ENEMIES) {
-        let position = getNextSpawnPositionWithoutUpdate();
-        createSpawnAnimation(position.x, position.y, particleEffects)
-    }
-    if (enemySpawnCooldown > 0) enemySpawnCooldown--;
-    if (enemySpawnCooldown <= 0 && enemyTanks.length < MAX_ENEMIES) {
-        spawnEnemy();
-        enemySpawnCooldown = ENEMY_SPAWN_COOLDOWN;
+    if (totalEnemiesSpawned < level.levelParameter.enemyCount) {
+        if (enemySpawnCooldown == 52 && enemyTanks.length < level.levelParameter.maxConcurrent) {
+            let position = getNextSpawnPositionWithoutUpdate();
+            createSpawnAnimation(position.x, position.y, particleEffects)
+        }
+        if (enemySpawnCooldown > 0) enemySpawnCooldown--;
+        if (enemySpawnCooldown <= 0 && enemyTanks.length < level.levelParameter.maxConcurrent) {
+            spawnEnemy();
+            enemySpawnCooldown = level.levelParameter.enemySpawnRate;
+        }
     }
 
     for (let i = enemyTanks.length - 1; i >= 0; i--) {
@@ -2987,7 +3004,6 @@ function updateEnemyTanks() {
         if (!enemy.isAlive) {
             const index = enemyTanks.indexOf(enemy);
             if (index > -1) enemyTanks.splice(index, 1);
-            updateEnemyDisplay(enemyTanks, MAX_ENEMIES, enemySpawnCooldown);
             continue;
         }
 
@@ -3105,8 +3121,6 @@ function updateEnemyTanks() {
             enemy.stuckTimer = 0;
         }
     }
-
-    updateEnemyDisplay(enemyTanks, MAX_ENEMIES, enemySpawnCooldown);
 }
 
 function fireEnemyBullet(enemy) {
@@ -3274,10 +3288,25 @@ function updateBullets() {
                     sound[3].currentTime = 0;
                     sound[3].play();
 
+                    let reward = 0;
 
+                    if (enemy.playerType === "enemy1") {
+                        reward = 100;
+                    } else if (enemy.playerType === "enemy2") {
+                        reward = 200;
+                    } else if (enemy.playerType === "enemy3") {
+                        reward = 300;
+                    } else if (enemy.playerType === "enemy4") {
+                        reward = 400;
+                    }
+
+                    // 2. Assign the reward to the correct tank
                     if (bullet.isAITank) {
                         enemiesKilled++;
                         callUpdateAIDisplay();
+                        AITank.score += reward; // Add calculated reward
+                    } else {
+                        humanTank.score += reward; // Add calculated reward
                     }
 
                     break;
@@ -3379,8 +3408,8 @@ function updateBullets() {
         }
     }
 
-    document.getElementById('bulletCount').textContent = bullets.length;
-    document.getElementById('cooldownDisplay').textContent = bulletCooldown;
+    //document.getElementById('bulletCount').textContent = bullets.length;
+    //document.getElementById('cooldownDisplay').textContent = bulletCooldown;
 }
 
 function firePlayerBullet(playerType) {
@@ -3448,7 +3477,7 @@ function firePlayerBullet(playerType) {
 
 function togglePause() {
     if (!gamePaused) {
-        
+
         sound[9].currentTime = 0;
         sound[9].play();
         sound[10].pause();
@@ -3463,8 +3492,8 @@ function togglePause() {
 function toggleAI() {
     aiEnabled = !aiEnabled;
     const button = document.getElementById('aiToggle');
-    button.textContent = aiEnabled ? 'Disable AI' : 'Enable AI';
-    button.classList.toggle('active', aiEnabled);
+    //button.textContent = aiEnabled ? 'Disable AI' : 'Enable AI';
+    //button.classList.toggle('active', aiEnabled);
 
     if (aiEnabled) {
         keys['w'] = keys['a'] = keys['s'] = keys['d'] = keys[' '] = false;
@@ -3507,31 +3536,31 @@ export function drawTitleScreen() {
     ctx.save();
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     // Draw the rolling title
     ctx.fillStyle = '#FFD700'; // Gold color
     ctx.font = `bold ${24 * zoomLevel}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
+
     // Draw "BATTLE CITY" with shadow for better visibility
     ctx.shadowColor = '#FF4500'; // Orange-red shadow
     ctx.shadowBlur = 10;
     ctx.fillText('BATTLE CITY', canvas.width / 2, titleY);
     ctx.shadowBlur = 0; // Reset shadow
-    
+
     // If title has reached center, show start prompt
     if (titleY <= canvas.height / 3) {
         gameState = 'ready';
-        
+
         // Draw start prompt
         ctx.fillStyle = '#FFF';
         ctx.font = `24px Arial`;
-        
+
         ctx.fillText('CLICK OR TAP HERE TO START', canvas.width / 2, canvas.height / 2 + 80);
-        if(window.innerWidth >=768){
+        if (window.innerWidth >= 768) {
             ctx.font = `20px Arial`;
-        ctx.fillText("Press 'L' key to shoot, arrow keys to move around", canvas.width / 2, canvas.height / 2 + 130);
+            ctx.fillText("Press 'L' key to shoot, arrow keys to move around", canvas.width / 2, canvas.height / 2 + 130);
         }
     }
     ctx.restore();
@@ -3540,29 +3569,47 @@ export function drawTitleScreen() {
 
 
 
-function drawLevelTransition(){
+function drawLevelTransition() {
     ctx.save();
     ctx.fillStyle = '#808080'; // Gray
-    if(frameCount < -149){
-        let levelRectHeight = canvas.height/2 * (1 - (-150 - frameCount)/30);
+    if (frameCount < -149) {
+        let levelRectHeight = canvas.height / 2 * (1 - (-150 - frameCount) / 30);
         ctx.fillRect(0, 0, canvas.width, levelRectHeight);
         let yPox = canvas.height;
         ctx.fillRect(0, yPox - levelRectHeight, canvas.width, levelRectHeight);
     }
 
-    if(frameCount >= -149){
+    if (frameCount >= -149) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#000000';
         ctx.font = `25px Arial`;
-        ctx.fillText('Stage 1', canvas.width / 2 -25, canvas.height/2);
+        ctx.fillText('Stage ' + levelNum, canvas.width / 2 - 25, canvas.height / 2);
+        stageClear = false;
+    }
+
+    if (frameCount == -149) {
+        initializeMap(levelNum, brickWalls, steelWalls, rivers, bushes, level);
+        enemySpawnCooldown = 120;
+        totalEnemiesSpawned = 0;
+        aiLastUpdate = 0;
+        powerUp.remove();
+        frozeTime.time = 0;
+        powerUp.clearShovelTimer();
+
+
+
+
+
+        sound[10].pause();
+        sound[11].pause();
     }
 
     ctx.restore();
 }
 
-function drawLevelTransitionClosing(){
+function drawLevelTransitionClosing() {
     ctx.save();
-    let levelRectHeight = canvas.height/2 * ((30 - frameCount)/30);
+    let levelRectHeight = canvas.height / 2 * ((30 - frameCount) / 30);
     ctx.fillStyle = '#808080'; // Gray
     ctx.fillRect(0, 0, canvas.width, levelRectHeight);
 
@@ -3578,21 +3625,40 @@ function gameLoop() {
         return;
     }
 
+
+
     // Handle title/start screen
     if (gameState !== 'playing') {
         updateTitleAnimation();
         drawTitleScreen(ctx, canvas, titleY, zoomLevel);
-        
+
         // Skip game logic during title screen
         requestAnimationFrame(gameLoop);
         return;
     }
 
-    if(frameCount < 0){
+    if (frameCount < 0) {
         drawLevelTransition();
         frameCount++;
         requestAnimationFrame(gameLoop);
         return;
+    }
+
+    document.getElementById('p1Score').textContent = humanTank.score;
+    document.getElementById('p1Lives').textContent = humanTank.lives;
+
+    document.getElementById('p2Score').textContent = AITank.score;
+    document.getElementById('p2Lives').textContent = AITank.lives;
+
+    document.getElementById('tankRemains').textContent = level.levelParameter.enemyCount - totalEnemiesSpawned;
+    document.getElementById('currentStage').textContent = levelNum;
+
+    if (totalEnemiesSpawned == level.levelParameter.enemyCount && enemyTanks.length == 0 && !stageClear) {
+        setTimeout(() => {
+            levelNum++;
+            frameCount = -180;
+        }, 4000);
+        stageClear = true;
     }
 
     updateTank(AITank, true);
@@ -3631,15 +3697,17 @@ function gameLoop() {
         drawPerpendicularBulletWarnings(ctx, zoomLevel, CELL_SIZE, BULLET_SIZE, showPredictions, perpendicularBullets);
     }
 
-    if(frameCount >= 0 && frameCount  <= 30){
+    if (frameCount >= 0 && frameCount <= 30) {
         drawLevelTransitionClosing();
     }
 
     frameCount++;
-    if(frameCount == 1){
+    if (frameCount == 1) {
+        AITank.isAlive = false;
+        humanTank.isAlive = false;
         sound[12].play();
     }
-    if (frameCount == 30)
+    if (frameCount == 30 && levelNum == 1)
         if (!aiEnabled)
             toggleAI();
     requestAnimationFrame(gameLoop);
@@ -3656,17 +3724,15 @@ async function init() {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-   
+
     drawLoadingScreen("Loading map...", 10, ctx, gameState, canvas);
-    await initializeMap(4, brickWalls, steelWalls, rivers, bushes, levelInfo); // UPDATED: Pass rivers and bushes arrays
-    
-   
+    await loadAllLevelImages();
     await initializeSound(sound, ctx, gameState, canvas);
-    
+
     powerUp.setSound(sound);
-    drawLoadingScreen("Loading tank sprites...", 80, ctx, gameState, canvas);
+    drawLoadingScreen("Loading tank sprites...", 90, ctx, gameState, canvas);
     await loadEntitySprites();
-    drawLoadingScreen("Loading particle effects...", 90, ctx, gameState, canvas);
+    drawLoadingScreen("Loading particle effects...", 95, ctx, gameState, canvas);
     await loadParticleSprites()
     drawLoadingScreen("Ready!", 100, ctx, gameState, canvas);
     bricksDestroyed = 0;
@@ -3688,7 +3754,7 @@ async function init() {
     canvas.addEventListener('click', startGame);
     gameState = 'title';
     titleY = canvas.height;
-    
+
 
     requestAnimationFrame(gameLoop);
 }

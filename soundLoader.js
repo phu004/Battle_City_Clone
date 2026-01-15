@@ -48,7 +48,7 @@ export async function initializeSound(sound, ctx, gameState, canvas) {
             audio.load(); // Start loading
         });
         
-        drawLoadingScreen("Loading sounds...", Math.floor(20 + 60 * i/soundConfigs.length), ctx, gameState, canvas);
+        drawLoadingScreen("Loading sounds...", Math.floor(20 + 70 * i/soundConfigs.length), ctx, gameState, canvas);
     }
     
     return sound;
