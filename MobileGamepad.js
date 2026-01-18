@@ -165,48 +165,35 @@ export class MobileGamepad {
         this.releaseAllDirections();
     }
     
-    processDirection(clientX, clientY) {
-        const rect = this.gestureDpad.getBoundingClientRect();
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        
-        // Calculate angle and distance from center
-        const dx = x - centerX;
-        const dy = y - centerY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        // If touch is too close to center, do nothing
-        if (distance < 20) {
-            this.releaseAllDirections();
-            return;
-        }
-        
-        // Calculate angle in degrees (0° = right, 90° = up)
-        let angle = Math.atan2(-dy, dx) * (180 / Math.PI);
-        if (angle < 0) angle += 360;
-        
-        let newDirection = null;
-        
-        // Determine direction based on angle
-        if (angle >= 45 && angle < 135) {
-            newDirection = 'UP';    // 45° to 135°
-        } else if (angle >= 135 && angle < 225) {
-            newDirection = 'LEFT';  // 135° to 225°
-        } else if (angle >= 225 && angle < 315) {
-            newDirection = 'DOWN';  // 225° to 315°
-        } else {
-            newDirection = 'RIGHT'; // 315° to 45°
-        }
-        
-        // Only update if direction changed
-        if (newDirection !== this.activeDirection) {
-            this.releaseAllDirections();
-            this.activeDirection = newDirection;
-            this.pressDirection(newDirection);
-        }
+processDirection(clientX, clientY) {
+    // Skip the distance check for faster response
+    const rect = this.gestureDpad.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const dx = x - centerX;
+    const dy = y - centerY;
+    
+    // SIMPLIFIED: Just check which quadrant we're in
+    let newDirection = null;
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+        // Horizontal movement dominant
+        newDirection = dx > 0 ? 'RIGHT' : 'LEFT';
+    } else {
+        // Vertical movement dominant
+        newDirection = dy > 0 ? 'DOWN' : 'UP';
     }
+    
+    // Update immediately without distance threshold
+    if (newDirection !== this.activeDirection) {
+        this.releaseAllDirections();
+        this.activeDirection = newDirection;
+        this.pressDirection(newDirection);
+    }
+}
     
     pressDirection(direction) {
         const key = this.directionToKey(direction);

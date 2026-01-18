@@ -7,14 +7,13 @@
 body {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
     background-color: #1a1a2e;
     font-family: 'Courier New', monospace;
     color: #e6e6e6;
-    padding: 20px;
+    padding: 50px 20px 20px; /* 100px top, 20px sides, 20px bottom */
 }
-
 .container {
     display: flex;
     flex-direction: column;

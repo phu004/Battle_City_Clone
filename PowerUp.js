@@ -47,11 +47,11 @@ export class PowerUp {
             // Rare power-ups
             'extraLife': {
                 name: 'extraLife',
-                rarity: 0.5
+                rarity: 0.4
             },
             'gun': {
                 name: 'gun',
-                rarity: 0.25
+                rarity: 0.2
             }
         };
 

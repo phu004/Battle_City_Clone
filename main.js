@@ -1044,7 +1044,7 @@ function spawnEnemy() {
         moving: true,
         color: '#CC4444', turretColor: '#992222', barrelColor: '#8B4513',
         decisionTimer: Math.floor(Math.random() * 50) + 30,
-        fireTimer: level.levelParameter.enemyFireRate + 50,
+        fireTimer: level.levelParameter.enemyFireRate,
         isAlive: true, canCollide: true,
         lastDirectionChange: 0,
         spawnPositionName: position.name,

@@ -3,19 +3,19 @@ import {drawLoadingScreen } from  './renderer.js';
 export async function initializeSound(sound, ctx, gameState, canvas) {
     // Define sounds in exact order
     const soundConfigs = [
-        { url: "sound/shoot.wav", volume: 0.65 },   
-        { url: "sound/bulletHitWall.wav", volume: 1 },
-        { url: "sound/destoryWall.wav", volume: 1 },
-        { url: "sound/enemyExplode.wav", volume: 1 },
-        { url: "sound/armorLost.wav", volume: 1 },
-        { url: "sound/powerUpSpawn.wav", volume: 1 },
-        { url: "sound/playerExplode.wav", volume: 1 },
-        { url: "sound/consumePowerUp.wav", volume: 1 },
-        { url: "sound/consumeExtraLife.wav", volume: 1 },
-        { url: "sound/pause.wav", volume: 1 },
-        { url: "sound/playerMoveSound.wav", volume:0.65 },
-        { url: "sound/enemyMoveSound.wav", volume: 0.65 },
-        { url: "sound/gameStart.mp3", volume: 1}
+        { url: "sound/shoot.wav", volume: 0.3 },   
+        { url: "sound/bulletHitWall.wav", volume: 0.3},
+        { url: "sound/destoryWall.wav", volume: 0.3 },
+        { url: "sound/enemyExplode.wav", volume: 0.3 },
+        { url: "sound/armorLost.wav", volume: 0.3 },
+        { url: "sound/powerUpSpawn.wav", volume: 0.3 },
+        { url: "sound/playerExplode.wav", volume: 0.3 },
+        { url: "sound/consumePowerUp.wav", volume: 0.3 },
+        { url: "sound/consumeExtraLife.wav", volume: 0.3 },
+        { url: "sound/pause.wav", volume: 0.3 },
+        { url: "sound/playerMoveSound.wav", volume:0.2 },
+        { url: "sound/enemyMoveSound.wav", volume: 0.2 },
+        { url: "sound/gameStart.mp3", volume: 0.2}
     ];
 
     // Initialize array with correct length to preserve indexes

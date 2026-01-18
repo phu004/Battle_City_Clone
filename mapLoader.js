@@ -30,8 +30,8 @@ export async function loadAllLevelImages() {
 // Level generation parameters
 const TOTAL_LEVELS = 30;
 const START_FIRE_RATE = 120;  // Starts slow
-const END_FIRE_RATE = 10;     // Ends fast (plus 50 base = 60 total)
-const START_SPAWN_RATE = 150; // Starts slow
+const END_FIRE_RATE = 0;     // Ends fast (plus 50 base = 60 total)
+const START_SPAWN_RATE = 120; // Starts slow
 const END_SPAWN_RATE = 52;    // Minimum spawn rate
 const START_ENEMIES = 20;     // Starts easy
 const END_ENEMIES = 60;       // Ends challenging
