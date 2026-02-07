@@ -953,7 +953,16 @@ function handleKeyDown(e) {
         return;
     }
 
-    const key = e.key.toLowerCase();
+    let  key = e.key.toLowerCase();
+    if(key == "a")
+        key = "arrowleft";
+    else if(key == "d")
+        key = "arrowright";
+    else if(key == "w")
+        key = "arrowup";
+    else if(key == "s")
+        key = "arrowdown";
+    
 
     // Handle both WASD and Arrow keys
     if (key in keys) {
@@ -983,7 +992,15 @@ function handleKeyDown(e) {
 }
 
 function handleKeyUp(e) {
-    const key = e.key.toLowerCase();
+    let key = e.key.toLowerCase();
+    if(key == "a")
+        key = "arrowleft";
+    else if(key == "d")
+        key = "arrowright";
+    else if(key == "w")
+        key = "arrowup";
+    else if(key == "s")
+        key = "arrowdown";
     if (key in keys) {
         keys[key] = false;
 
@@ -3560,7 +3577,7 @@ export function drawTitleScreen() {
         ctx.fillText('CLICK OR TAP HERE TO START', canvas.width / 2, canvas.height / 2 + 80);
         if (window.innerWidth >= 768) {
             ctx.font = `20px Arial`;
-            ctx.fillText("Press 'L' key to shoot, arrow keys to move around", canvas.width / 2, canvas.height / 2 + 130);
+            ctx.fillText("Press 'L' key to shoot, 'w s a d' to move around", canvas.width / 2, canvas.height / 2 + 130);
         }
     }
     ctx.restore();
